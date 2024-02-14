@@ -110,3 +110,4 @@ def plot_qq(data, series_name, dict_fn, nbins=500, show_45=True):
     plt.xlim([x_min, x_max])
     plt.ylim([x_min, x_max])
     plt.legend()
+    plt.show()
