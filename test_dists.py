@@ -28,8 +28,8 @@ df_ret = fd.download_yahoo_returns(lst_indices)
 
 sp_ret = df_ret[df_ret.Ticker=='^GSPC']['LogReturn'].values
 
-ls = fd.LevyStableInterp.fit(sp_ret)
-gs = fd.GeneralisedSkewT.fit(sp_ret)
+ls = fd.LevyStableInterp.fitclass(sp_ret)
+gs = fd.GeneralisedSkewT.fitclass(sp_ret)
 #plot_function(lambda x : gsd.pdf(x), title='Skewed Lapace', fn_2=lambda x : gsd_skew.pdf(x))
 dict_pdf = {
             'Levy-Stable' : [ls.pdf, 'b-'],

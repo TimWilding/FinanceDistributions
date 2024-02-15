@@ -57,7 +57,7 @@ min_pdf_val = np.min(parallel_pdf_vals[np.isfinite(parallel_pdf_vals)])
 # We need to do this to make the interpolation work, but it should be done on the output
 # so that we can preserve the 0 values of the PDF function
 #parallel_pdf_vals[~np.isfinite(parallel_pdf_vals)] = min_pdf_val - 100.0
-interp = RegularGridInterpolator((alpha_vals, beta_vals, x_vals), parallel_pdf_vals, method='cubic')
+interp = RegularGridInterpolator((alpha_vals, beta_vals, x_vals), parallel_pdf_vals, method='linear')
 
 # Calculation 2 - Use straight for loop
 # start=time.time()

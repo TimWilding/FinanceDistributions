@@ -6,10 +6,10 @@ import math
 import numpy as np
 import pybobyqa
 from scipy.special import gamma, loggamma, beta
-from scipy.stats import uniform, rv_continuous
+from scipy.stats import uniform, rv_continuous, FitError
 
-MEAN_VAR = 0
-VAR_VAR = 1
+LOC_VAR = 0
+SCALE_VAR = 1
 SKEW_VAR = 2 # -1 < skew_var< -1
 K_VAR = 3 # K>0
 N_VAR = 4 # n>2
@@ -71,10 +71,10 @@ def generalised_skewt_loglikelihood(x, μ, σ, ƛ, k, n):
     return ll
 
 class GeneralisedSkewT(rv_continuous):
-    def __init__(self, μ: float, σ: float, ƛ:float=0, k:float=2, n:float=10000):
+    def __init__(self, ƛ:float=0, k:float=2, n:float=10000, loc:float=0.0, scale:float=1.0):
         super().__init__(self)
-        self.μ = μ
-        self.σ = σ
+        self.μ = loc
+        self.σ = scale
         self.ƛ = ƛ
         self.k = k
         self.n = n
@@ -118,12 +118,52 @@ class GeneralisedSkewT(rv_continuous):
     
     @staticmethod
     def fit(x, prob=None, display_progress=True):
-        sol = gen_skewt_fit(x, prob, display_progress)
-        return GeneralisedSkewT(sol.x[MEAN_VAR], sol.x[VAR_VAR], sol.x[SKEW_VAR],
-                                sol.x[K_VAR], sol.x[N_VAR])
+        """
+        Uses MLE to return Generalised Skew-T parameters this is
+        set to be similar to fit in the scipy.stats package so
+        it should raises a TypeError or ValueError if the input
+        is invalid and a scipy.stats.FitError if fitting fails
+        or the fit produced would be invalid
+        Returns
+        -------
+        parameter_tuple : tuple of floats
+            Estimates for any shape parameters (if applicable), followed by
+            those for location and scale. For most random variables, shape
+            statistics will be returned, but there are exceptions (e.g.
+            ``norm``).
+        """
+        sol = _gen_skewt_fit(x, prob, display_progress)
+        return (sol.x[SKEW_VAR],
+                np.tan(sol.x[K_VAR]), 
+                np.tan(sol.x[N_VAR]), 
+                sol.x[LOC_VAR],
+                sol.x[SCALE_VAR])
+    
+    @staticmethod
+    def fitclass(x, prob=None, display_progress=True):
+        """
+        Uses MLE to return Generalised Skew-T class this is
+        set to be similar to fit in the scipy.stats package so
+        it should raises a TypeError or ValueError if the input
+        is invalid and a scipy.stats.FitError if fitting fails
+        or the fit produced would be invalid
+        Returns
+        -------
+        parameter_tuple : tuple of floats
+            Estimates for any shape parameters (if applicable), followed by
+            those for location and scale. For most random variables, shape
+            statistics will be returned, but there are exceptions (e.g.
+            ``norm``).
+        """
+        sol = _gen_skewt_fit(x, prob, display_progress)
+        return GeneralisedSkewT(sol.x[SKEW_VAR],
+                np.tan(sol.x[K_VAR]), 
+                np.tan(sol.x[N_VAR]), 
+                sol.x[LOC_VAR],
+                sol.x[SCALE_VAR])
 
 
-def gen_skewt_fit(returns_data, prob=None, display_progress=True):
+def _gen_skewt_fit(returns_data, prob=None, display_progress=True):
     """
 	Routine to fit a generalised skew-t distribution to a set of data sets with
 	weights using the BOBYQA algorithm of Powell (https://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf)
@@ -141,14 +181,14 @@ def gen_skewt_fit(returns_data, prob=None, display_progress=True):
 	# Initialise NLopt engine to use BOBYQA algorithm
 
 	# Set up starting parameters & upper & lower bounds
-    init_x = np.array([mean_dist, sd_dist, 0.0, 2.0, 8.0])
-    lower = np.array([-10*sd_dist, 1e-8, -0.9999, 1E-4, 0.1])
-    upper = np.array([10*sd_dist, 5*sd_dist, 0.9999, 100, 100])
+    init_x = np.array([mean_dist, sd_dist, 0.0, np.arctan(2.0), np.arctan(8.0)])
+    lower = np.array([-10*sd_dist, 1e-8*sd_dist, -0.9999, 0.001*math.pi/2, 0.001*math.pi/2])
+    upper = np.array([10*sd_dist, 5*sd_dist, 0.9999, 0.999*math.pi/2, 0.999*math.pi/2])
 
 
 	# NLopt function must return a gradient even if algorithm is derivative-free
 	# - this function will return an empty gradient
-    ll_func = lambda x : -np.sum(wt_prob * generalised_skewt_loglikelihood(returns_data, x[MEAN_VAR], x[VAR_VAR], x[SKEW_VAR], x[K_VAR], x[N_VAR]))
+    ll_func = lambda x : -np.sum(wt_prob * generalised_skewt_loglikelihood(returns_data, x[LOC_VAR], x[SCALE_VAR], x[SKEW_VAR], np.tan(x[K_VAR]), np.tan(x[N_VAR])))
     if display_progress:
         print("Fitting Generalised Skew-T Distribution")
         print("=======================================")
@@ -164,4 +204,9 @@ def gen_skewt_fit(returns_data, prob=None, display_progress=True):
   #  print(soln.message)
     if display_progress:
         print(soln)
+    if soln.flag == soln.EXIT_INPUT_ERROR:
+        raise(ValueError('input value problem in fitting routine'))
+    if (soln.flag < soln.EXIT_SUCCESS) & (soln.flag!=soln.EXIT_LINALG_ERROR):
+        print(soln)
+        raise(FitError("Fitting error in Generalised Skew-T fitting"))
     return soln

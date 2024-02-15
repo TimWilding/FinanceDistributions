@@ -16,12 +16,17 @@ plt.rcParams["font.family"] = 'sans-serif' #'Humor Sans' #
 
 def gs_fn(ret_data):
     gsfit = fd.GeneralisedSkewT.fit(ret_data, display_progress=False)
+    lsfit = fd.LevyStableInterp.fit(ret_data, display_progress=False)
     x = {
-         'loc' : gsfit.μ,
-         'scale' : gsfit.σ,
-         'lambda' : gsfit.ƛ,
-         'k' : gsfit.k,
-         'n' : gsfit.n
+         'gs_loc' : gsfit[3],
+         'gs_scale' : gsfit[4],
+         'gs_lambda' : gsfit[0],
+         'gs_k' : gsfit[1],
+         'gs_n' : gsfit[2],
+         'ls_alpha' : lsfit[0],
+         'ls_beta'  : lsfit[1],
+         'ls_loc'   : lsfit[2],
+         'ls_scale' : lsfit[3]
         }
     return x
 
@@ -31,7 +36,8 @@ df_ret = fd.download_yahoo_returns(lst_indices)
 
 sp_ret = df_ret[df_ret.Ticker=='^GSPC']['LogReturn'].values
 
-df_bs = fd.parallel_bootstrap(sp_ret, gs_fn, 200)
-print(df_bs.head(10))
+df_bs = fd.parallel_bootstrap(sp_ret, gs_fn, nskip=50, nbs=1000)
+df_bs.to_csv('gsd_bootstrap.csv')
+
 
 print('Finished testing')
