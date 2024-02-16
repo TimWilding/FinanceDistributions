@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 #  see https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html
 from scipy.special import hermitenorm
+from .stat_functions import parallel_bootstrap
 
 def Cornish_Fisher_percentile(mu, sigma, skew, kurt, holding_period,
                               pctile, periods_in_year):
@@ -229,7 +230,9 @@ def PRIIPS_stats_bootstrap(sample_df : pd.DataFrame, holding_period=5,
                            periods_in_year=256, nbs=1000,
                            use_new=False)->pd.DataFrame:
     """
-    Returns the PRIIPS stats in an easy-to-use dataframe
+    Performs a bootstrap and
+    returns the PRIIPS stats in an easy-to-use dataframe
+    
     """
     pivoted_df = sample_df.pivot(index='Date',
                                         columns='Index',
@@ -237,50 +240,10 @@ def PRIIPS_stats_bootstrap(sample_df : pd.DataFrame, holding_period=5,
     Y = pivoted_df.values
     mask = np.logical_not(np.any(np.isnan(Y), axis=1))
     Z = Y[mask,:] # only use columns of Y that don't contain any NaNs
-    n = Z.shape[0]
-    lst_df = []
-    for i in range(nbs):
-        pb = np.random.choice(range(n), size=n, replace=True) # Create BS pointers into dataset with size n
-        Z_sample = Z[pb, :]
-        sample_name = 'Simulation {0}'.format(i+1)
-        df = PRIIPS_stats_array(Z_sample, pivoted_df.columns,
-                                holding_period, periods_in_year,
-                                use_new, sample_name)
-        lst_df.append(df)
-    return pd.concat(lst_df)
+    boot_fn = lambda x : PRIIPS_stats_array(x, pivoted_df.columns,
+                                            holding_period, periods_in_year,
+                                            use_new, None)
+    
+    return parallel_bootstrap(Z, boot_fn, nbs, include_sample=False) 
 
-def plot_bootstrap_priips(df_bs_stats : pd.DataFrame)->pd.DataFrame:
-    """
-    Plots aggregated statistics for a dataframe of results from the bootstrap
-    returns the aggregated dataframe with mean and standard deviation for each
-    parameter
-    """
-    df_agg = df_bs_stats.groupby('Identifier').agg({'Unfavourable' : ['mean', 'std'],
-                                 'Moderate' : ['mean', 'std'],
-                                 'Favourable' : ['mean', 'std'],
-                                 'VaREquivalentVolatility' : ['mean', 'std']
-                                  })
-
-
-    fig, ax = plt.subplots()
-    # Define colors for each set
-
-    bar_width = 0.2
-    num_sets = 3
-    x = np.arange(num_sets)
-# Plot the bars with error bars and different colors
-    ax.bar(x - (bar_width * (num_sets - 1) / 2), df_agg[('Unfavourable', 'mean')], yerr=df_agg[('Unfavourable', 'std')], width=bar_width, capsize=5, label='Unfavourable', color='b')
-    ax.bar(x + bar_width - (bar_width * (num_sets - 1) / 2), df_agg[('Moderate', 'mean')], width=bar_width, yerr=df_agg[('Moderate', 'std')], capsize=5, label='Moderate', color='g')
-    ax.bar(x + 2*bar_width - (bar_width * (num_sets - 1) / 2), df_agg[('Favourable', 'mean')], yerr=df_agg[('Favourable', 'std')], width=bar_width, capsize=5, label='Favourable', color='r')
-    ax.set_xticks(x)
-    ax.set_xticklabels(df_agg.index)
-# Set labels and legend
-    plt.xlabel('Identifier')
-    plt.ylabel('Mean Outcome')
-    plt.title('Outcome in Different Scenarios')
-    plt.legend()
-
-# Show the plot
-    plt.show()
-    return df_agg
 
