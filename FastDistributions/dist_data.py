@@ -68,17 +68,26 @@ def download_yahoo_returns(assets, download_period='20y', endweekday:int=2,
                 df_out = pd.concat([df_out, df_history])
             
     print('Completed Download')
-    # Download DataFrame containing prices for the three indices
-    # Calculate the returns
-    df_out['LogPrice'] = np.log(df_out['Close'])
-    df_out.sort_values(['Ticker', 'Date'], inplace=True)
-    df_out['LogReturn'] = 100*df_out.groupby('Ticker')['LogPrice'].diff()
-    df_out = df_out.dropna() # get rid of the log returns that are rubbish
     # Convert to datetime and drop timezone info
     df_out['Date'] = pd.to_datetime(df_out['Date'], utc=True).dt.normalize()
-    # Calculate end of month
-    df_out['EndOfMonth'] = df_out['Date'] + pd.offsets.MonthEnd(0)
+
+    return calculate_returns(df_out, 'Ticker', 'Date')
+
+def calculate_returns(df, identifier_field='Ticker', date_field='Date',
+                      price_field='Close', endweekday:int=2)->pd.DataFrame:
+    """
+    Calculate returns for a dataframe with three columns - id, date,
+    and price
+    """
+    # Calculate the returns
+    df_out = df
+    df_out.loc[:, 'LogPrice'] = np.log(df_out[price_field])
+    df_out.sort_values([identifier_field, date_field], inplace=True)
+    df_out['LogReturn'] = 100*df_out.groupby(identifier_field)['LogPrice'].diff()
+     # Calculate end of month
+    df_out.loc[:, 'EndOfMonth'] = df_out[date_field] + pd.offsets.MonthEnd(0)
     # Calculate end of the week (assuming the week ends on Wednesday)
-    df_out['EndOfWeek'] = df_out['Date'] + pd.offsets.Week(weekday=endweekday)
+    df_out.loc[:, 'EndOfWeek'] = df_out[date_field] + pd.offsets.Week(weekday=endweekday)
+    df_out = df_out.dropna() # get rid of the log returns that are rubbish
     print('Calculated Returns')
     return df_out

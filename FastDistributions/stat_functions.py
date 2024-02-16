@@ -2,6 +2,8 @@
 Routine to do a parallel bootstrap
 """
 from multiprocessing.pool import ThreadPool
+import datetime
+from datetime import timedelta
 import time
 import pandas as pd
 import numpy as np
@@ -62,3 +64,69 @@ def parallel_bootstrap(ret_data, fn, nbs:int=1000,
 
     print(f'Bootstrap Completed = {(time.time()-start):.2f} s')
     return pd.DataFrame(lst_bs)
+
+
+
+def rolling_backtest(df_history, back_fn,
+                     rolling_window_years=10,
+                     rolling_start_years=8):
+    """
+    backtest function that calculates rolling statistics
+    df_history = DataFrame containing returns data for the funds
+    back_fn = function that calculates the PRIIPS performance stats
+    rolling_window_years = size of the data sample in years
+    holding_period = recommended holding period used for calculation
+    rolling_start_years  = first date to calculate the PRIIPS performance stats
+    """
+    NUM_DAYS = 500
+# Find the latest date in the DataFrame
+    latest_date = df_history['Date'].max()
+
+# Set the initial rolling window end date to the latest date
+    rolling_window_end = latest_date
+
+# Create an empty DataFrame to store the rolling subset
+    rolling_subset = pd.DataFrame(columns=['Index', 'Date', 'LogReturn'])
+
+# Define the number of rolling windows you want (e.g., 5 years with 5-year gaps)
+
+    start_date = latest_date.replace(year=latest_date.year - rolling_start_years)
+    lst_stats = []
+    print('Running Backtest')
+    print('Start Date = {0:%Y-%m-%d}'.format(start_date))
+    print('End Date   = {0:%Y-%m-%d}'.format(latest_date))
+    day_count = 0
+    start_time = time.time()
+    while start_date <= latest_date:
+
+    # Calculate the start and end dates for the rolling window
+    # Wrap in try catch block to handle leap years
+        try:
+            rolling_window_start = start_date.replace(year=start_date.year - rolling_window_years) # 10 years minus leap year days
+        except:
+            temp_date = start_date - timedelta(days=1.0)
+            rolling_window_start = temp_date.replace(year=temp_date.year - rolling_window_years) # 10 years minus leap year days
+
+        rolling_window_end = start_date
+
+    # Create a subset of data within the rolling window
+        df_subset = df_history[(df_history['Date'] >= rolling_window_start) &
+                                     (df_history['Date'] <= rolling_window_end)]
+
+    # Append the subset to the rolling_subsets list
+        df_stats = _bootstrap_sample(df_subset, start_date, back_fn)
+        df_stats['Date'] = start_date
+        lst_stats.append(df_stats)
+
+    # Move the rolling window back by 5 years for the next iteration
+        day_count += 1
+        if day_count % NUM_DAYS == 0:
+             print('Completed {0:<6d} days - {1:%Y-%m-%d}'.format(day_count, start_date))
+        start_date += timedelta(days=1)  # 1 DAY
+
+# Your rolling_subset DataFrame will now contain data for each rolling window
+    df = pd.concat(lst_stats)
+    run_time = time.time() - start_time
+    print('No of Days = {:<6d}'.format(day_count))
+    print('Runtime (sec)    = {:<11.2f}'.format(run_time))
+    return df

@@ -182,8 +182,9 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
             np.vectorize(volatility_to_MRM_class)(vol)
            )
 
-def PRIIPS_stats_array(Z, columns, row_names, holding_period,
-                       periods_in_year, use_new : bool) -> pd.DataFrame:
+def PRIIPS_stats_array(Z, column_names, holding_period,
+                       periods_in_year, use_new:bool=False,
+                       sample_name=None) -> pd.DataFrame:
     """
     Converts the results of a call to a function that returns PRIIPS statistics
     to a dataframe that can be used in the resultant analysis
@@ -192,18 +193,22 @@ def PRIIPS_stats_array(Z, columns, row_names, holding_period,
         s = PRIIPS_stats_2020(Z/100.0, holding_period, periods_in_year)
     else:
         s = PRIIPS_stats(Z/100.0, holding_period, periods_in_year)
-    df = pd.DataFrame({'Identifier': columns,
-                       'Unfavourable' : np.squeeze(s[0]),
-                       'Moderate' : np.squeeze(s[1]),
-                       'Favourable' : np.squeeze(s[2]),
-                       'VaREquivalentVolatility' : np.squeeze(s[3]),
-                       'SummaryRiskIndicator'    : np.squeeze(s[4]),
-                       'Sample' : [row_names]*Z.shape[1]
-                       })
-    return df
+
+    dict_results = {
+                    'Identifier': column_names,
+                    'Unfavourable' : np.squeeze(s[0]),
+                    'Moderate' : np.squeeze(s[1]),
+                    'Favourable' : np.squeeze(s[2]),
+                    'VaREquivalentVolatility' : np.squeeze(s[3]),
+                    'SummaryRiskIndicator'    : np.squeeze(s[4])
+                    }
+    if sample_name is not None:
+        dict_results['Sample'] = [sample_name]*Z.shape[1]
+        
+    return pd.DataFrame(dict_results)
 
 def PRIIPS_stats_df(sample_df : pd.DataFrame, holding_period=5,
-                    periods_in_year=256, sample_name='FULLSAMPLE',
+                    periods_in_year=256, sample_name=None,
                     use_new : bool=False)->pd.DataFrame:
     """
     Returns the PRIIPS stats in an easy-to-use dataframe
@@ -215,8 +220,9 @@ def PRIIPS_stats_df(sample_df : pd.DataFrame, holding_period=5,
     mask = np.logical_not(np.any(np.isnan(Y), axis=1))
     Z = Y[mask,:] # only use columns of Y that don't contain any NaNs
 
-    return PRIIPS_stats_array(Z, pivoted_df.columns, sample_name,
-                              holding_period, periods_in_year, use_new)
+    return PRIIPS_stats_array(Z, pivoted_df.columns,
+                              holding_period, periods_in_year,
+                              use_new, sample_name)
 
 
 def PRIIPS_stats_bootstrap(sample_df : pd.DataFrame, holding_period=5,
@@ -237,8 +243,9 @@ def PRIIPS_stats_bootstrap(sample_df : pd.DataFrame, holding_period=5,
         pb = np.random.choice(range(n), size=n, replace=True) # Create BS pointers into dataset with size n
         Z_sample = Z[pb, :]
         sample_name = 'Simulation {0}'.format(i+1)
-        df = PRIIPS_stats_array(Z_sample, pivoted_df.columns, sample_name,
-                                holding_period, periods_in_year, use_new)
+        df = PRIIPS_stats_array(Z_sample, pivoted_df.columns,
+                                holding_period, periods_in_year,
+                                use_new, sample_name)
         lst_df.append(df)
     return pd.concat(lst_df)
 
