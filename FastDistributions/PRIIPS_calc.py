@@ -232,7 +232,7 @@ def PRIIPS_stats_bootstrap(sample_df : pd.DataFrame, holding_period=5,
     """
     Performs a bootstrap and
     returns the PRIIPS stats in an easy-to-use dataframe
-    
+    SHOULD I GET RID OF THIS
     """
     pivoted_df = sample_df.pivot(index='Date',
                                         columns='Index',

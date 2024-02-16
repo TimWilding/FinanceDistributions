@@ -108,6 +108,9 @@ def _gen_levy_fit(returns_data, prob=None, display_progress=True):
 	Routine to fit a generalised skew-t distribution to a set of data sets with
 	weights using the BOBYQA algorithm of Powell (https://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf)
 	This routine does not require derivatives
+
+    Note that this seems to alight on gridd points of the interpolated values and 
+    may need looking at to see if we can refine the solution
     """
 
     n = returns_data.shape[0]
