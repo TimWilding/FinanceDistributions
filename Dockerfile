@@ -6,5 +6,4 @@ RUN conda config --append channels conda-forge \
     && conda clean -afy \
     && find /opt/conda/ -follow -type f -name '*.a' -delete \
     && find /opt/conda/ -follow -type f -name '*.pyc' -delete
-RUN pip install Py-BOBYQA
 RUN pip install .

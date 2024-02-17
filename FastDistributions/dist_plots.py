@@ -111,3 +111,21 @@ def plot_qq(data, series_name, dict_fn, nbins=500, show_45=True):
     plt.ylim([x_min, x_max])
     plt.legend()
     plt.show()
+
+def plot_indexed_prices(df, col_name='LogReturn', axis_label='Value',
+                        id_field='Index', date_field='Date'):
+    """
+    Plot each of the indices on chart for the performance dataset
+    Performance is indexed to 100 on the first day
+    """
+    df_sort = df.sort_values([id_field, date_field])
+    df_sort['CumLogRet'] = df.groupby(id_field)[col_name].cumsum()
+    df_sort['IndexedPrice'] = df_sort.groupby(id_field)['CumLogRet'].transform(lambda x: 100*np.exp((x -x.iloc[0] + 1.0)/100.0))
+
+# Plot the time series for each asset using Seaborn
+    fig, ax = plt.subplots(figsize=(8, 5))
+    sns.lineplot(data=df_sort, x=date_field, y='IndexedPrice', hue=id_field)
+    plt.ylabel(axis_label)
+
+# Display the plot
+    plt.show()
