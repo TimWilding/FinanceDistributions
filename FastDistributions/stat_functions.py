@@ -4,6 +4,7 @@ Routine to do a parallel bootstrap
 from multiprocessing.pool import ThreadPool
 import datetime
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 import time
 import pandas as pd
 import numpy as np
@@ -89,11 +90,10 @@ def rolling_backtest(df_history, back_fn,
                      rolling_window_years=10,
                      rolling_start_years=8):
     """
-    backtest function that calculates rolling statistics
-    df_history = DataFrame containing returns data for the funds
+    backtest function that calculates rolling daily statistics
+    df_history = DataFrame containing daily returns data for the funds
     back_fn = function that calculates the PRIIPS performance stats
     rolling_window_years = size of the data sample in years
-    holding_period = recommended holding period used for calculation
     rolling_start_years  = first date to calculate the PRIIPS performance stats
     """
     NUM_DAYS = 500
@@ -108,7 +108,7 @@ def rolling_backtest(df_history, back_fn,
 
 # Define the number of rolling windows you want (e.g., 5 years with 5-year gaps)
 
-    start_date = latest_date.replace(year=latest_date.year - rolling_start_years)
+    start_date = latest_date - relativedelta(years=rolling_start_years)
     lst_stats = []
     print('Running Backtest')
     print('Start Date = {0:%Y-%m-%d}'.format(start_date))
@@ -120,10 +120,10 @@ def rolling_backtest(df_history, back_fn,
     # Calculate the start and end dates for the rolling window
     # Wrap in try catch block to handle leap years
         try:
-            rolling_window_start = start_date.replace(year=start_date.year - rolling_window_years) # 10 years minus leap year days
+            rolling_window_start = start_date - relativedelta(years=rolling_window_years) # 10 years minus leap year days
         except:
             temp_date = start_date - timedelta(days=1.0)
-            rolling_window_start = temp_date.replace(year=temp_date.year - rolling_window_years) # 10 years minus leap year days
+            rolling_window_start = temp_date - relativedelta(years=rolling_window_years) # 10 years minus leap year days
 
         rolling_window_end = start_date
 
