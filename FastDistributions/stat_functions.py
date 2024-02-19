@@ -28,7 +28,7 @@ def _bootstrap_sample(ret_data, trial_name, fn):
 
 def parallel_bootstrap(ret_data, fn, nbs:int=1000,
                        include_sample:bool=True, threads:int=16,
-                       nskip:int=100, axis=0)-> pd.DataFrame:
+                       nskip:int=100, axis=0, display_progress=True)-> pd.DataFrame:
     """
     Quick and dirty code to bootstrap a function that returns a 
     dictionary of results. The function should return a 
@@ -36,7 +36,7 @@ def parallel_bootstrap(ret_data, fn, nbs:int=1000,
     see https://stackoverflow.com/questions/352670/weighted-random-selection-with-and-without-replacement#353576
     - arguments
     - ret_data = array of data supplied for function
-    - fn = function that operates on an array of data and returns a dictionary of values
+    - fn = function that operates on an array of data and returns a dictionary of values or a dataframe
     - include_sample = return the function value for the sample
     - threads = number of threads to use
     - nskip = report every time nskip threads complete
@@ -52,7 +52,8 @@ def parallel_bootstrap(ret_data, fn, nbs:int=1000,
         lst_bs.append(dict_opt)
 
     pool = ThreadPool(processes=threads)
-    print('Starting bootstrap threads')
+    if display_progress:
+        print('Starting bootstrap threads')
     for i in range(nbs):
         # Create BS pointers into dataset with size n
         sample_idx = np.random.choice(range(n), size=n, replace=True)
@@ -61,7 +62,8 @@ def parallel_bootstrap(ret_data, fn, nbs:int=1000,
                            (ret_sample, f'Simulation {i+1}', fn)))
 
     elapsed_time = time.time() - start
-    print(f'Started bootstrap iterations after {elapsed_time:.2f} s')
+    if display_progress:
+        print(f'Started bootstrap iterations after {elapsed_time:.2f} s')
     cur_time = time.time()
     i = 0
     concat=False
@@ -73,10 +75,12 @@ def parallel_bootstrap(ret_data, fn, nbs:int=1000,
         i += 1
         if (i % nskip == 0) & (i>0):
             elapsed_time = time.time() - cur_time
-            print(f'Completed {i}/{nbs} iterations ({elapsed_time:.2f} s)')
+            if display_progress:
+                print(f'Completed {i}/{nbs} iterations ({elapsed_time:.2f} s)')
             cur_time = time.time()
 
-    print(f'Bootstrap Completed = {(time.time()-start):.2f} s')
+    if display_progress:
+        print(f'Bootstrap Completed = {(time.time()-start):.2f} s')
     df_out = []
     if concat:
         df_out = pd.concat(lst_bs)
@@ -84,19 +88,19 @@ def parallel_bootstrap(ret_data, fn, nbs:int=1000,
         df_out = pd.DataFrame(lst_bs)
     return df_out
 
-
-
-def rolling_backtest(df_history, back_fn,
-                     rolling_window_years=10,
-                     rolling_start_years=8):
+def rolling_backtest_date_function(df_history:pd.DataFrame, back_fn,
+                     rolling_window_years:float=10.0,
+                     rolling_start_years:float=8.0,
+                     sample_freq=relativedelta(days=1),
+                     skip_periods:int=500)->pd.DataFrame:
     """
     backtest function that calculates rolling daily statistics
     df_history = DataFrame containing daily returns data for the funds
-    back_fn = function that calculates the PRIIPS performance stats
+    back_fn = function using start and end date that returns a dataframe of results
     rolling_window_years = size of the data sample in years
     rolling_start_years  = first date to calculate the PRIIPS performance stats
-    """
-    NUM_DAYS = 500
+    """    
+
 # Find the latest date in the DataFrame
     latest_date = df_history['Date'].max()
 
@@ -127,24 +131,50 @@ def rolling_backtest(df_history, back_fn,
 
         rolling_window_end = start_date
 
-    # Create a subset of data within the rolling window
-        df_subset = df_history[(df_history['Date'] >= rolling_window_start) &
-                                     (df_history['Date'] <= rolling_window_end)]
-
     # Append the subset to the rolling_subsets list
-        df_stats = _bootstrap_sample(df_subset, start_date, back_fn)
+        df_stats = back_fn(rolling_window_start, rolling_window_end)
+
         df_stats['Date'] = start_date
         lst_stats.append(df_stats)
 
     # Move the rolling window back by 5 years for the next iteration
         day_count += 1
-        if day_count % NUM_DAYS == 0:
-             print('Completed {0:<6d} days - {1:%Y-%m-%d}'.format(day_count, start_date))
-        start_date += timedelta(days=1)  # 1 DAY
+        if day_count % skip_periods == 0:
+             print('Completed {0:<6d} periods - {1:%Y-%m-%d}'.format(day_count, start_date))
+        start_date += sample_freq  # 1 DAY
 
 # Your rolling_subset DataFrame will now contain data for each rolling window
     df = pd.concat(lst_stats)
     run_time = time.time() - start_time
-    print('No of Days = {:<6d}'.format(day_count))
+    print('No of Periods = {:<6d}'.format(day_count))
     print('Runtime (sec)    = {:<11.2f}'.format(run_time))
     return df
+
+def _backtest_fn(df:pd.DataFrame, start_date, end_date, back_fn):
+    """
+    Used to create a subset of data with the correct timeframe and
+    pass that data to the calculation function
+    back_fn - function that takes a dataframe and returns a dataframe
+    start_date - start of rolling window frame
+    end_date - end of rolling window frame
+    df - dataframe with date field that will be filtered using the
+    window periods
+    """
+    df_subset = df[(df['Date'] >= start_date) &
+                    (df['Date'] <= end_date)]
+
+    # Append the subset to the rolling_subsets list
+    df_stats = back_fn(df_subset)
+    return df_stats
+
+def rolling_backtest(df_history:pd.DataFrame, back_fn,
+                     rolling_window_years:float=10.0,
+                     rolling_start_years:float=8.0,
+                     sample_freq=relativedelta(days=1),
+                     skip_periods:int=500)->pd.DataFrame:
+    sample_fn = lambda x, y : _backtest_fn(df_history, x, y, back_fn)
+    return rolling_backtest_date_function(df_history, sample_fn,
+                                          rolling_window_years=rolling_window_years,
+                                          rolling_start_years=rolling_start_years,
+                                          sample_freq=sample_freq,
+                                          skip_periods=skip_periods)

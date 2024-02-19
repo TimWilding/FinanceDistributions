@@ -14,7 +14,7 @@ setup(
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
-        install_requires=['numpy', 'matplotlib', 'yfinance', 'scipy',' Py-BOBYQA'], # add any additional packages that 
+        install_requires=['numpy', 'matplotlib', 'yfinance', 'scipy',' Py-BOBYQA', 'dateutil', 'seaborn'], # add any additional packages that 
         # needs to be installed along with your package. Eg: 'caer' -0 what about PyBobyQA
         
         keywords=['python', 'first package'],
