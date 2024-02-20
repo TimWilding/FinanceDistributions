@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-def plot_hist_fit(data, series_name, dict_fn, nbins=20, log_scale=False):
+def plot_hist_fit(data, series_name, dict_fn, nbins=20,
+                  log_scale=False, ylim=None):
     """
     Plots a histogram of some data and then plots several functions over it.
     Those functions are typically distributions fitted to the data such as the
@@ -32,7 +33,10 @@ def plot_hist_fit(data, series_name, dict_fn, nbins=20, log_scale=False):
     plt.legend()
     if log_scale:
         plt.yscale('log')
-        plt.ylim([0.8*y_min, 1.2*y_max])
+        if ylim is None:
+            plt.ylim([0.8*y_min, 1.2*y_max])
+        else:
+            plt.ylim(ylim)
 
 # Show the plot
     plt.show()
@@ -72,7 +76,8 @@ def plot_function(fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Function', fn_2
     plt.xlim([t_min, t_max])
     plt.show()
     
-def plot_qq(data, series_name, dict_fn, nbins=500, show_45=True):
+def plot_qq(data, series_name, dict_fn, nbins=500,
+            show_45=True, xlim=None, show_labels=False):
     """
     see https://en.wikipedia.org/wiki/Q%E2%80%93Q_plot
     Plot a q-q plot for several distributions using the functions defined
@@ -96,7 +101,17 @@ def plot_qq(data, series_name, dict_fn, nbins=500, show_45=True):
         if np.max(fn_pctiles) > x_max:
             x_max = np.max(fn_pctiles)
         plt.plot(fn_pctiles, data_pctiles,  dict_fn[fn_name][1], label=fn_name, 
-                 markerfacecolor='None', markersize=3)
+                 markerfacecolor='None', markersize=4)
+        if show_labels:
+            for i in range(nbins):
+                 if xlim is None:
+                     plt.text(data_pctiles[i], fn_pctiles[i], f'{pctiles[i]:0.2f}',
+                              fontsize=6, ha='right', va='bottom')  # Adjust fontsize and position as needed
+                 else:
+                     if (data_pctiles[i] < xlim[1]) & (data_pctiles[i] > xlim[0]):
+                         plt.text(fn_pctiles[i], data_pctiles[i], f'{pctiles[i]:0.2f}%',
+                                  fontsize=6, ha='right')#, va='bottom')  # ha='right') Adjust fontsize and position as needed
+            
     
     f = 0.05
     x_min = x_min - f*(x_max - x_min)
@@ -107,8 +122,12 @@ def plot_qq(data, series_name, dict_fn, nbins=500, show_45=True):
     plt.xlabel('Theoretical Percentiles')
     plt.ylabel('Sample Percentiles')
     plt.title(f'{series_name} Q-Q Plot')
-    plt.xlim([x_min, x_max])
-    plt.ylim([x_min, x_max])
+    if xlim is None:
+        plt.xlim([x_min, x_max])
+        plt.ylim([x_min, x_max])
+    else:
+        plt.xlim(xlim)
+        plt.ylim(xlim)
     plt.legend()
     plt.show()
 
