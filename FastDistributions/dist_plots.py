@@ -108,7 +108,8 @@ def plot_qq(data, series_name, dict_fn, nbins=500,
                      plt.text(data_pctiles[i], fn_pctiles[i], f'{pctiles[i]:0.2f}',
                               fontsize=6, ha='right', va='bottom')  # Adjust fontsize and position as needed
                  else:
-                     if (data_pctiles[i] < xlim[1]) & (data_pctiles[i] > xlim[0]):
+                     if (data_pctiles[i] < xlim[1]) & (data_pctiles[i] > xlim[0]) & \
+                          (fn_pctiles[i] < xlim[1]) & (fn_pctiles[i] > xlim[0]):
                          plt.text(fn_pctiles[i], data_pctiles[i], f'{pctiles[i]:0.2f}%',
                                   fontsize=6, ha='right')#, va='bottom')  # ha='right') Adjust fontsize and position as needed
             
