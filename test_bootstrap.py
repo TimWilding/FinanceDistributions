@@ -25,20 +25,20 @@ def boot_fn(ret_data):
     ls = levy_stable(lsfit[0], lsfit[1], lsfit[2], lsfit[3])
     ls_ll = np.sum(ls.logpdf(ret_data))
     x = {
-         'norm_loc' : norm_fit[0],
+         'norm_loc'   : norm_fit[0],
          'norm_scale' : norm_fit[1],
          'norm_ll'    : norm_ll,
-         'gs_loc' : gsfit[3],
-         'gs_scale' : gsfit[4],
-         'gs_lambda' : gsfit[0],
-         'gs_k' : gsfit[1],
-         'gs_n' : gsfit[2],
-         'gs_ll' : gs_ll,
-         'ls_alpha' : lsfit[0],
-         'ls_beta'  : lsfit[1],
-         'ls_loc'   : lsfit[2],
-         'ls_scale' : lsfit[3],
-         'ls_ll'    : ls_ll
+         'gs_loc'     : gsfit[3],
+         'gs_scale'   : gsfit[4],
+         'gs_lambda'  :  gsfit[0],
+         'gs_k'       : gsfit[1],
+         'gs_n'       : gsfit[2],
+         'gs_ll'      : gs_ll,
+         'ls_alpha'   : lsfit[0],
+         'ls_beta'    : lsfit[1],
+         'ls_loc'     : lsfit[2],
+         'ls_scale'   : lsfit[3],
+         'ls_ll'      : ls_ll
         }
     lst_pctiles =  [0.1, 0.5, 1, 5, 25, 50, 75, 95, 99, 99.5, 99.9]
     data_pctiles = np.percentile(ret_data, lst_pctiles)
@@ -49,7 +49,7 @@ def boot_fn(ret_data):
     for pctile, gs_pctile in zip(lst_pctiles, list(gs_pctiles)):
         x[f'gs_{pctile}th_pctile'] = gs_pctile
 
-    ls_pctiles = gs.ppf(np.array(lst_pctiles)/100.0)
+    ls_pctiles = ls.ppf(np.array(lst_pctiles)/100.0)
     for pctile, ls_pctile in zip(lst_pctiles, list(ls_pctiles)):
         x[f'ls_{pctile}th_pctile'] = ls_pctile
 

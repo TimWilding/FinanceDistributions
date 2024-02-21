@@ -149,3 +149,37 @@ def plot_indexed_prices(df, col_name='LogReturn', axis_label='Value',
 
 # Display the plot
     plt.show()
+
+
+def plot_log_function(dict_fn, x_lim=[-3, 2], y_lim=None, n=100, xlabel='PR(X>x)', title='CDF'):
+    """
+    Takes a function and produces a graph using the limits
+    given
+    fn = univariate function
+    x_lim = min and max of function range
+    y_lim = min and max of function values (should I set a default)
+    n = number of points to use to evaluate function
+    """
+    t_min = x_lim[0]
+    t_max = x_lim[1]
+# Used t_vals & y_vals to separate ourselves from the y & t symbols used to build the solution to the ODE
+    t_vals = np.logspace(t_min, t_max, n) # build a grid of t values to use for calculating the function values
+    for fn_name in dict_fn:
+        f_pdf = dict_fn[fn_name][0](t_vals)
+#        if np.max(f_pdf) > y_max:
+#            y_max = np.max(f_pdf)
+#        if np.min(f_pdf) < y_min:
+#            y_min = np.min(f_pdf)
+        plt.plot(t_vals, f_pdf, dict_fn[fn_name][1], label=fn_name)
+    plt.xlabel("x")
+    plt.ylabel(xlabel)
+    plt.title(title)
+    if y_lim is not None:
+        plt.ylim(y_lim)
+#    plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0)) # plot tick marks every 0.1 along the axis
+    plt.xlim([10**t_min, 10**t_max])
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.legend()
+    plt.show()
+    return

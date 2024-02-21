@@ -1,0 +1,11 @@
+name: fastdistributions
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - matplotlib
+  - seaborn
+  - yfinance
+  - joblib
+prefix: C:\Users\Tim\AppData\Local\anaconda3\envs\fastdistributions
