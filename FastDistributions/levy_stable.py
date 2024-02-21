@@ -2,9 +2,9 @@
 Fast fitting of Levy-Stable distributions using interpolation of prebuilt functions
 """
 import math
-import numpy as np
 import pickle
 import urllib.request
+import numpy as np
 import pybobyqa
 from scipy.stats import levy_stable, FitError
 
@@ -31,6 +31,17 @@ with open(DESTINATION, 'rb') as handle:
 class LevyStableInterp():
     @staticmethod
     def ll(x, alpha, beta, loc=0, scale=1):
+        """
+        Use linear interpolation to estimate the
+        log-likelihood value for the following:
+         - alpha = levy-stable alpha parameter
+         - beta = levy-stable beta parameter
+         - loc = location parameter
+         - scale = scale parameter
+         - x = array of observed values
+        returns an array of log-likelihoods for
+        each x
+        """
         n = x.shape[0]
         alpha_use = alpha
         beta_use = beta
@@ -45,8 +56,8 @@ class LevyStableInterp():
         at_vals[at_vals<-MAX_AT_VAL*math.pi/2] = -MAX_AT_VAL*math.pi/2
 #          print('NORM:   Maximum = {0}, Minimum = {1}'.format(np.max(norm_x), np.min(norm_x)))
 #          print('ARCTAN: Maximum = {0}, Minimum = {1}'.format(np.max(at_vals), np.min(at_vals)))
-        ll = GRID_INT((alpha_use, beta_use, at_vals), method='linear') - np.log(scale)
-        return ll
+        log_like = GRID_INT((alpha_use, beta_use, at_vals), method='linear') - np.log(scale)
+        return log_like
 
     @staticmethod
     def fit(x, prob=None, display_progress=True):
@@ -66,7 +77,7 @@ class LevyStableInterp():
         """
         sol = _gen_levy_fit(x, prob, display_progress)
         return (sol.x[ALPHA_VAR], sol.x[BETA_VAR], sol.x[LOC_VAR], sol.x[SCALE_VAR])
-    
+
     @staticmethod
     def fitclass(x, prob=None, display_progress=True):
         """
@@ -92,16 +103,16 @@ def ll(returns_data, x, display_progress):
     if display_progress:
         print('Parameters')
         print('==========')
-        print('Alpha = {0}'.format(x[ALPHA_VAR]))
-        print('Beta = {0}'.format(x[BETA_VAR]))
-        print('Loc = {0}'.format(x[LOC_VAR]))
-        print('Scale = {0}'.format(x[SCALE_VAR]))
-    ll = np.sum(LevyStableInterp.ll(returns_data, x[ALPHA_VAR],
-                                    x[BETA_VAR], x[LOC_VAR],
-                                    x[SCALE_VAR]))
+        print(f'Alpha = {x[ALPHA_VAR]}')
+        print(f'Beta = {x[BETA_VAR]}')
+        print(f'Loc = {x[LOC_VAR]}')
+        print(f'Scale = {x[SCALE_VAR]}')
+    log_like = np.sum(LevyStableInterp.ll(returns_data, x[ALPHA_VAR],
+                                          x[BETA_VAR], x[LOC_VAR],
+                                          x[SCALE_VAR]))
     if display_progress:
-        print('Likelihood = {0}'.format(ll))
-    return ll
+        print(f'Likelihood = {log_like}')
+    return log_like
 
 def _gen_levy_fit(returns_data, prob=None, display_progress=True):
     """
@@ -148,10 +159,10 @@ def _gen_levy_fit(returns_data, prob=None, display_progress=True):
   #  print("Exit flag = %g" % soln.status)
   #  print(soln.message)
     if display_progress:
-         print(soln)
+        print(soln)
     if soln.flag == soln.EXIT_INPUT_ERROR:
-        raise(ValueError('input value problem in fitting routine'))
+        raise ValueError('input value problem in fitting routine')
     if (soln.flag < soln.EXIT_SUCCESS) & (soln.flag!=soln.EXIT_LINALG_ERROR):
         print(soln)
-        raise(FitError("Fitting error in Fast Levy Stable fitting"))
+        raise FitError("Fitting error in Fast Levy Stable fitting")
     return soln

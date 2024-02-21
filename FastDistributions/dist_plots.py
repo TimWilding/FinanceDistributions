@@ -1,7 +1,13 @@
-from scipy.stats import levy_stable
+"""
+Useful statistical plots such as 
+ plot_qq - generalised qq plot that can take multiple distributions, 
+ plot_indexed_prices - plot all returns referenced to 100 on start date
+ plot_hist_fit - plot a histogram with the theoretical fit
+ plot_function - plot a generic function on a chart
+ plot_log_function - plots dictionary of functions on a log-log scale
+"""
 from matplotlib import pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
 
 def plot_hist_fit(data, series_name, dict_fn, nbins=20,
@@ -13,7 +19,6 @@ def plot_hist_fit(data, series_name, dict_fn, nbins=20,
     """
 # Plot the histogram
     plt.hist(data, bins=nbins, density=True, alpha=0.7, color='blue', label='Histogram')
- 
     x = np.linspace(data.min(), data.max(), 500)
     y_max = 0.0
     y_min = 10000
@@ -52,11 +57,12 @@ def plot_function(fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Function', fn_2
     """
     t_min = x_lim[0]
     t_max = x_lim[1]
-# Used t_vals & y_vals to separate ourselves from the y & t symbols used to build the solution to the ODE
-    t_vals = np.linspace(t_min, t_max, n) # build a grid of t values to use for calculating the function values
-    y_vals = fn(t_vals) # Apply the function to the grid of t values to get a python array of function values
+    # build a grid of t values to use for calculating the function values
+    t_vals = np.linspace(t_min, t_max, n)
+    # Apply the function to the grid of t values to get a python array of function values
+    y_vals = fn(t_vals)
 
-# pass t_vals and y_vals to the plotting routine
+    # pass t_vals and y_vals to the plotting routine
     plt.plot(t_vals,y_vals,
              linestyle='-')
     if fn_2 is not None:
@@ -72,10 +78,11 @@ def plot_function(fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Function', fn_2
         y_min = y_lim[0]
         y_max = y_lim[1]
     plt.ylim([y_min, y_max])
-    plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0)) # plot tick marks every 0.1 along the axis
+    # plot tick marks every 0.1 along the axis
+    plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0))
     plt.xlim([t_min, t_max])
     plt.show()
-    
+
 def plot_qq(data, series_name, dict_fn, nbins=500,
             show_45=True, xlim=None, show_labels=False):
     """
@@ -89,31 +96,31 @@ def plot_qq(data, series_name, dict_fn, nbins=500,
        - nbins = number of percentile points to use
        - show_45 = show line at 45 degrees angle 
     """
-    n = data.shape[0]
     pctiles = 100*np.linspace(0.5/nbins, (nbins-0.5)/nbins, nbins) # see pctiles
     data_pctiles = np.percentile(data, pctiles)
     x_min = np.min(data_pctiles)
-    x_max = np.max(data_pctiles) 
+    x_max = np.max(data_pctiles)
     for fn_name in dict_fn:
         fn_pctiles = dict_fn[fn_name][0](pctiles/100.0)
         if np.min(fn_pctiles) < x_min:
             x_min = np.min(fn_pctiles)
         if np.max(fn_pctiles) > x_max:
             x_max = np.max(fn_pctiles)
-        plt.plot(fn_pctiles, data_pctiles,  dict_fn[fn_name][1], label=fn_name, 
+        plt.plot(fn_pctiles, data_pctiles,  dict_fn[fn_name][1], label=fn_name,
                  markerfacecolor='None', markersize=4)
         if show_labels:
             for i in range(nbins):
-                 if xlim is None:
-                     plt.text(data_pctiles[i], fn_pctiles[i], f'{pctiles[i]:0.2f}',
-                              fontsize=6, ha='right', va='bottom')  # Adjust fontsize and position as needed
-                 else:
-                     if (data_pctiles[i] < xlim[1]) & (data_pctiles[i] > xlim[0]) & \
-                          (fn_pctiles[i] < xlim[1]) & (fn_pctiles[i] > xlim[0]):
-                         plt.text(fn_pctiles[i], data_pctiles[i], f'{pctiles[i]:0.2f}%',
-                                  fontsize=6, ha='right')#, va='bottom')  # ha='right') Adjust fontsize and position as needed
-            
-    
+                if xlim is None:
+                    # Adjust fontsize and position as needed
+                    plt.text(data_pctiles[i], fn_pctiles[i], f'{pctiles[i]:0.2f}',
+                            fontsize=6, ha='right', va='bottom')
+                else:
+                    if (data_pctiles[i] < xlim[1]) & (data_pctiles[i] > xlim[0]) & \
+                         (fn_pctiles[i] < xlim[1]) & (fn_pctiles[i] > xlim[0]):
+                        plt.text(fn_pctiles[i], data_pctiles[i], f'{pctiles[i]:0.2f}%',
+                                 fontsize=6, ha='right')
+
+
     f = 0.05
     x_min = x_min - f*(x_max - x_min)
     x_max = x_max + f*(x_max - x_min)
@@ -143,7 +150,6 @@ def plot_indexed_prices(df, col_name='LogReturn', axis_label='Value',
     df_sort['IndexedPrice'] = df_sort.groupby(id_field)['CumLogRet'].transform(lambda x: 100*np.exp((x -x.iloc[0] + 1.0)/100.0))
 
 # Plot the time series for each asset using Seaborn
-    fig, ax = plt.subplots(figsize=(8, 5))
     sns.lineplot(data=df_sort, x=date_field, y='IndexedPrice', hue=id_field)
     plt.ylabel(axis_label)
 
@@ -162,7 +168,8 @@ def plot_log_function(dict_fn, x_lim=[-3, 2], y_lim=None, n=100, xlabel='PR(X>x)
     """
     t_min = x_lim[0]
     t_max = x_lim[1]
-# Used t_vals & y_vals to separate ourselves from the y & t symbols used to build the solution to the ODE
+    # Used t_vals & y_vals to separate ourselves from the
+    # y & t symbols used to build the solution to the ODE
     t_vals = np.logspace(t_min, t_max, n) # build a grid of t values to use for calculating the function values
     for fn_name in dict_fn:
         f_pdf = dict_fn[fn_name][0](t_vals)
@@ -182,4 +189,3 @@ def plot_log_function(dict_fn, x_lim=[-3, 2], y_lim=None, n=100, xlabel='PR(X>x)
     plt.xscale('log')
     plt.legend()
     plt.show()
-    return

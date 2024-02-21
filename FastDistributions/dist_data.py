@@ -1,10 +1,10 @@
 """
 Utility functions for downloading data from e.g. yfinance
 """
+from multiprocessing.pool import ThreadPool
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from multiprocessing.pool import ThreadPool
 
 def _download_single_asset(asset, download_period, start, end):
     """
@@ -27,7 +27,7 @@ def _download_single_asset(asset, download_period, start, end):
     return df_history
 
 
-    
+
 def download_yahoo_returns(assets, download_period='20y', endweekday:int=2,
                            start=None, end=None, threads:int=4)->pd.DataFrame:
     """
@@ -48,15 +48,16 @@ def download_yahoo_returns(assets, download_period='20y', endweekday:int=2,
     the resultant dataframe is not arranged in a way that makes calculation
     of returns easy with a column for each ticker.
     """
-    
+
     # multi thread the code
     # using https://stackoverflow.com/questions/6893968/how-to-get-the-return-value-from-a-thread
     pool = ThreadPool(processes=threads)
     lst_results = []
     for dl_asset in assets:
-        print('Downloading {0}'.format(dl_asset[1]))
-        lst_results.append(pool.apply_async(_download_single_asset, (dl_asset, download_period, start, end)))
-    
+        print(f'Downloading {dl_asset[1]}')
+        lst_results.append(pool.apply_async(_download_single_asset,
+                                            (dl_asset, download_period, start, end)))
+
 
     df_out= None
     for result in lst_results:
@@ -66,12 +67,12 @@ def download_yahoo_returns(assets, download_period='20y', endweekday:int=2,
                 df_out = df_history
             else:
                 df_out = pd.concat([df_out, df_history])
-            
+
     print('Completed Download')
     # Convert to datetime and drop timezone info
     df_out['Date'] = pd.to_datetime(df_out['Date'], utc=True).dt.normalize()
 
-    return calculate_returns(df_out, 'Ticker', 'Date')
+    return calculate_returns(df_out, 'Ticker', 'Date', endweekday=endweekday)
 
 def calculate_returns(df, identifier_field='Ticker', date_field='Date',
                       price_field='Close', endweekday:int=2)->pd.DataFrame:

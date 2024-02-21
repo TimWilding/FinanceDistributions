@@ -27,19 +27,21 @@ def var_adjustment_sgt(ƛ, pinv, q):
     return np.sqrt(np.maximum(a - b**2, 1e-20))
 
 def generalised_skewt_loglikelihood(x, μ, σ, ƛ, k, n):
-    # This function matches https://en.wikipedia.org/wiki/Skewed_generalized_t_distribution
-	  # but doesn't seem to match Theodossiou (1998). Written to match Theodossiou (1998). There
-	  # seems to be an error in the Wiki page!
-	  # Valid Ranges
-	  # -1 < ƛ < 1
-  	# n > 2
-	  # k > 0
-	  # σ > 0
-	  # Typical Distributions
-	  #  k = 2, Hansen Skew T
-	  #  n -> ∞, Skewed Generalised Error Distribution
-	  #  k = 1,  n -> ∞, Skewed Laplace Distribution
-	  #  k = 2,  n -> ∞, Skewed Normal
+    """
+    This function matches https://en.wikipedia.org/wiki/Skewed_generalized_t_distribution
+    but doesn't seem to match Theodossiou (1998). Written to match Theodossiou (1998). There
+    seems to be an error in the Wiki page!
+    Valid Ranges
+	  -1 < ƛ < 1
+      n > 2
+      k > 0
+      σ > 0
+    Typical Distributions
+      k = 2, Hansen Skew T
+      n -> ∞, Skewed Generalised Error Distribution
+      k = 1,  n -> ∞, Skewed Laplace Distribution
+      k = 2,  n -> ∞, Skewed Normal
+    """
     p = k
     q = n/k
     pinv = 1.0/p
@@ -57,20 +59,24 @@ def generalised_skewt_loglikelihood(x, μ, σ, ƛ, k, n):
         ll = np.log(p) - np.log(2) - np.log(σ) - loggamma(pinv) - d
         return ll
 
-    t = var_adjustment_sgt(ƛ, pinv, q)
-    #	if isnan(t)
-    #		println("t is nan")
-    #	end
-    v =  q**(-pinv) / var_adjustment_sgt(ƛ, pinv, q)
+    # t = var_adjustment_sgt(ƛ, pinv, q)
+    # if isnan(t)
+    #     println("t is nan")
+    # end
+    v = q**(-pinv) / var_adjustment_sgt(ƛ, pinv, q)
 
     d = (np.abs(ε) / (v * σ * ( 1 +  ƛ*np.sign(ε))))**p
 
-     # see https://math.stackexchange.com/questions/3922187/what-is-the-log-of-the-beta-function-how-can-it-be-simplified
+    # see https://math.stackexchange.com/questions/3922187/what-is-the-log-of-the-beta-function-how-can-it-be-simplified
     ll = np.log(p)  + loggamma(pinv + q) - np.log(2) - np.log(v) - np.log(σ) - (pinv*np.log(q))
     ll = ll - loggamma(pinv) - loggamma(q) - (pinv + q) * np.log(1 + (d / q))
     return ll
 
 class GeneralisedSkewT(rv_continuous):
+    """
+    Class to represent Generalised Skew T distribution using the same form as the
+    scipy.stats.distribution objects.
+    """
     def __init__(self, ƛ:float=0, k:float=2, n:float=10000, loc:float=0.0, scale:float=1.0):
         super().__init__(self)
         self.μ = loc
@@ -115,7 +121,7 @@ class GeneralisedSkewT(rv_continuous):
         out = σ*(ƛ-1)*(1/(q*beta(p_inv, q).quantile(1-2*prob/(1-ƛ)))-1/q)**(-p_inv)
         out = out_sign*out + self.μ
         return out
-    
+
     @staticmethod
     def fit(x, prob=None, display_progress=True):
         """
@@ -134,11 +140,11 @@ class GeneralisedSkewT(rv_continuous):
         """
         sol = _gen_skewt_fit(x, prob, display_progress)
         return (sol.x[SKEW_VAR],
-                np.tan(sol.x[K_VAR]), 
-                np.tan(sol.x[N_VAR]), 
+                np.tan(sol.x[K_VAR]),
+                np.tan(sol.x[N_VAR]),
                 sol.x[LOC_VAR],
                 sol.x[SCALE_VAR])
-    
+
     @staticmethod
     def fitclass(x, prob=None, display_progress=True):
         """
@@ -157,8 +163,8 @@ class GeneralisedSkewT(rv_continuous):
         """
         sol = _gen_skewt_fit(x, prob, display_progress)
         return GeneralisedSkewT(sol.x[SKEW_VAR],
-                np.tan(sol.x[K_VAR]), 
-                np.tan(sol.x[N_VAR]), 
+                np.tan(sol.x[K_VAR]),
+                np.tan(sol.x[N_VAR]),
                 sol.x[LOC_VAR],
                 sol.x[SCALE_VAR])
 
@@ -166,7 +172,8 @@ class GeneralisedSkewT(rv_continuous):
 def _gen_skewt_fit(returns_data, prob=None, display_progress=True):
     """
 	Routine to fit a generalised skew-t distribution to a set of data sets with
-	weights using the BOBYQA algorithm of Powell (https://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf)
+	weights using the BOBYQA algorithm of Powell 
+    (https://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf)
 	This routine does not require derivatives
     """
 
@@ -188,7 +195,9 @@ def _gen_skewt_fit(returns_data, prob=None, display_progress=True):
 
 	# NLopt function must return a gradient even if algorithm is derivative-free
 	# - this function will return an empty gradient
-    ll_func = lambda x : -np.sum(wt_prob * generalised_skewt_loglikelihood(returns_data, x[LOC_VAR], x[SCALE_VAR], x[SKEW_VAR], np.tan(x[K_VAR]), np.tan(x[N_VAR])))
+    ll_func = lambda x : -np.sum(wt_prob * generalised_skewt_loglikelihood(returns_data, x[LOC_VAR],
+                                                                           x[SCALE_VAR], x[SKEW_VAR],
+                                                                           np.tan(x[K_VAR]), np.tan(x[N_VAR])))
     if display_progress:
         print("Fitting Generalised Skew-T Distribution")
         print("=======================================")
@@ -205,8 +214,8 @@ def _gen_skewt_fit(returns_data, prob=None, display_progress=True):
     if display_progress:
         print(soln)
     if soln.flag == soln.EXIT_INPUT_ERROR:
-        raise(ValueError('input value problem in fitting routine'))
+        raise ValueError('input value problem in fitting routine')
     if (soln.flag < soln.EXIT_SUCCESS) & (soln.flag!=soln.EXIT_LINALG_ERROR):
         print(soln)
-        raise(FitError("Fitting error in Generalised Skew-T fitting"))
+        raise FitError("Fitting error in Generalised Skew-T fitting")
     return soln

@@ -1,6 +1,8 @@
+"""
+PRIIPS calculation functions for category 2 PRIIPS.
+"""
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats import norm
 #  see https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html
 from scipy.special import hermitenorm
@@ -125,9 +127,10 @@ def PRIIPS_stats(returns, holding_period=5, periods_in_year=256):
 
     mu, sigma, skew, kurt = calc_moments(returns)
     
-    local_cf_pctile = lambda x, y, z : Cornish_Fisher_percentile(x, y, skew, kurt,
-                                                              holding_period, z,
-                                                              periods_in_year)
+    def local_cf_pctile(x, y, z):
+        return  Cornish_Fisher_percentile(x, y, skew, kurt,
+                                          holding_period, z,
+                                          periods_in_year)
 
     vol = convert_VaR_to_volatility(local_cf_pctile(0.0, sigma, 0.025),
                                     0.025, holding_period)
@@ -155,9 +158,10 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
 
     mu, sigma, skew, kurt = calc_moments(returns)
     
-    local_cf_pctile = lambda x, y, z : Cornish_Fisher_percentile(x, y, skew, kurt,
-                                                              holding_period, z,
-                                                              periods_in_year)
+    def local_cf_pctile(x, y, z):
+        return Cornish_Fisher_percentile(x, y, skew, kurt,
+                                         holding_period, z,
+                                         periods_in_year)
     vol = convert_VaR_to_volatility(local_cf_pctile(0.0, sigma, 0.025),
                                     0.025, holding_period)
 
