@@ -8,7 +8,10 @@ Useful statistical plots such as
 """
 from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
+import scipy.stats
+
 
 def plot_hist_fit(data, series_name, dict_fn, nbins=20,
                   log_scale=False, ylim=None):
@@ -19,16 +22,16 @@ def plot_hist_fit(data, series_name, dict_fn, nbins=20,
     """
 # Plot the histogram
     plt.hist(data, bins=nbins, density=True, alpha=0.7, color='blue', label='Histogram')
-    x = np.linspace(data.min(), data.max(), 500)
+    x_vals = np.linspace(data.min(), data.max(), 500)
     y_max = 0.0
     y_min = 10000
     for fn_name in dict_fn:
-        f_pdf = dict_fn[fn_name][0](x)
+        f_pdf = dict_fn[fn_name][0](x_vals)
         if np.max(f_pdf) > y_max:
             y_max = np.max(f_pdf)
         if np.min(f_pdf) < y_min:
             y_min = np.min(f_pdf)
-        plt.plot(x, f_pdf, dict_fn[fn_name][1], label=fn_name)
+        plt.plot(x_vals, f_pdf, dict_fn[fn_name][1], label=fn_name)
 
 
 # Add labels and legend
@@ -46,19 +49,20 @@ def plot_hist_fit(data, series_name, dict_fn, nbins=20,
 # Show the plot
     plt.show()
 
-def plot_function(fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Function', fn_2=None):
+
+def plot_function(fn, x_lim=[-6, 6], y_lim=None, n_pts=10000, title='Function', fn_2=None):
     """
     Takes a function and produces a graph using the limits
     given
     fn = univariate function
     x_lim = min and max of function range
     y_lim = min and max of function values (should I set a default)
-    n = number of points to use to evaluate function
+    n_pts = number of points to use to evaluate function
     """
     t_min = x_lim[0]
     t_max = x_lim[1]
     # build a grid of t values to use for calculating the function values
-    t_vals = np.linspace(t_min, t_max, n)
+    t_vals = np.linspace(t_min, t_max, n_pts)
     # Apply the function to the grid of t values to get a python array of function values
     y_vals = fn(t_vals)
 
@@ -82,6 +86,7 @@ def plot_function(fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Function', fn_2
     plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0))
     plt.xlim([t_min, t_max])
     plt.show()
+
 
 def plot_qq(data, series_name, dict_fn, nbins=500,
             show_45=True, xlim=None, show_labels=False):
@@ -121,9 +126,9 @@ def plot_qq(data, series_name, dict_fn, nbins=500,
                                  fontsize=6, ha='right')
 
 
-    f = 0.05
-    x_min = x_min - f*(x_max - x_min)
-    x_max = x_max + f*(x_max - x_min)
+    pad_val = 0.05
+    x_min = x_min - pad_val*(x_max - x_min)
+    x_max = x_max + pad_val*(x_max - x_min)
     if show_45:
         sline = np.linspace(x_min, x_max, 100)
         plt.plot(sline, sline, 'k--')
@@ -139,15 +144,18 @@ def plot_qq(data, series_name, dict_fn, nbins=500,
     plt.legend()
     plt.show()
 
-def plot_indexed_prices(df, col_name='LogReturn', axis_label='Value',
+def _calc_cum_fn(ret_data):
+    return 100*np.exp((ret_data -ret_data.iloc[0] + 1.0)/100.0)
+
+def plot_indexed_prices(df_returns:pd.DataFrame, col_name='LogReturn', axis_label='Value',
                         id_field='Index', date_field='Date'):
     """
     Plot each of the indices on chart for the performance dataset
     Performance is indexed to 100 on the first day
     """
-    df_sort = df.sort_values([id_field, date_field])
-    df_sort['CumLogRet'] = df.groupby(id_field)[col_name].cumsum()
-    df_sort['IndexedPrice'] = df_sort.groupby(id_field)['CumLogRet'].transform(lambda x: 100*np.exp((x -x.iloc[0] + 1.0)/100.0))
+    df_sort = df_returns.sort_values([id_field, date_field])
+    df_sort['CumLogRet'] = df_returns.groupby(id_field)[col_name].cumsum()
+    df_sort['IndexedPrice'] = df_sort.groupby(id_field)['CumLogRet'].transform(_calc_cum_fn)
 
 # Plot the time series for each asset using Seaborn
     sns.lineplot(data=df_sort, x=date_field, y='IndexedPrice', hue=id_field)
@@ -157,35 +165,86 @@ def plot_indexed_prices(df, col_name='LogReturn', axis_label='Value',
     plt.show()
 
 
-def plot_log_function(dict_fn, x_lim=[-3, 2], y_lim=None, n=100, xlabel='PR(X>x)', title='CDF'):
+def _plot_log_cdf_function(dict_fn, ret_data, left_tail=False, ref_fn=None,
+                           ret_marker='kx', x_lim=[-3, 2], y_lim=None, n_pts=100, title='CDF'):
     """
-    Takes a function and produces a graph using the limits
+    Takes a function and produces a log-log graph using the limits
     given
-    fn = univariate function
-    x_lim = min and max of function range
+    dict_fn = dictionary of cdf functions
+    ret_data = sample data for comparison with empirical cdf function
+    left_tail = look at PR(X<-x) instead of PR(X>x)
+    ref_fn = comparison function for behaviour in tail
+    x_lim = log10 values of min and max of function range 
     y_lim = min and max of function values (should I set a default)
-    n = number of points to use to evaluate function
+    n = number of points to use to evaluate cumulative density function
     """
+    ecdf = scipy.stats.ecdf(ret_data)
     t_min = x_lim[0]
     t_max = x_lim[1]
-    # Used t_vals & y_vals to separate ourselves from the
-    # y & t symbols used to build the solution to the ODE
-    t_vals = np.logspace(t_min, t_max, n) # build a grid of t values to use for calculating the function values
+    # build a grid of t values to use for calculating the function values
+    t_vals = np.logspace(t_min, t_max, n_pts)
     for fn_name in dict_fn:
-        f_pdf = dict_fn[fn_name][0](t_vals)
+        if left_tail:
+            f_pdf = dict_fn[fn_name][0](-t_vals)
+        else:
+            f_pdf =  1 - dict_fn[fn_name][0](t_vals)
+
 #        if np.max(f_pdf) > y_max:
 #            y_max = np.max(f_pdf)
 #        if np.min(f_pdf) < y_min:
 #            y_min = np.min(f_pdf)
         plt.plot(t_vals, f_pdf, dict_fn[fn_name][1], label=fn_name)
+    if ref_fn is not None:
+        f_pdf = ref_fn[0](t_vals)
+        plt.plot(t_vals, f_pdf, ref_fn[1], label=ref_fn[2])
+
+    if left_tail:
+        f_pdf =  ecdf.cdf.evaluate(-t_vals)
+        plt.plot(t_vals, f_pdf, ret_marker, label='Sample')
+    else:
+        f_pdf =  1-ecdf.cdf.evaluate(t_vals)
+        plt.plot(t_vals, f_pdf, ret_marker, label='Sample')
+
+
     plt.xlabel("x")
-    plt.ylabel(xlabel)
+    if left_tail:
+        plt.ylabel('Pr(X<-x)')
+    else:
+        plt.ylabel('Pr(X>x)')
     plt.title(title)
     if y_lim is not None:
         plt.ylim(y_lim)
-#    plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0)) # plot tick marks every 0.1 along the axis
     plt.xlim([10**t_min, 10**t_max])
     plt.yscale('log')
     plt.xscale('log')
     plt.legend()
+
+
+def plot_log_cdf(dict_dist, ret_data, ref_fn=None, x_lim=[-3, 2], y_lim=None, n_pts=25,
+                 ret_marker='kx', series_name='Daily Returns'):
+    """
+    Plot the tails of the CDF function - left and right tail
+     - dict_dist - a dictionary containing a set of distributions each distribution is characterised 
+                   by a two-entry list containing the cdf function and the marker used on the chart
+                   e.g. {'Normal': [norm_fit.cdf, 'r-']} would draw the fit of the
+                   normal distribution using a red line
+     - ret_data - sample data used for comparison
+     - ref_fn - useful to plot a reference function on the chart such as a power law to compare tail
+                behaviour with the ideal
+     - xlim - log range to span 10^xlim(0) to 10^xlim(1)
+     - ylim - y range to span
+     - ret_marker - marker to use for sample data CDF
+     - series name - used in title of the CDF plots
+    """
+
+    _, _ = plt.subplots(nrows=1, ncols=2)
+
+    plt.subplot(1, 2, 1)
+
+    _plot_log_cdf_function(dict_dist, ret_data, False, ref_fn, x_lim=x_lim, ret_marker=ret_marker,
+                           y_lim=y_lim, n_pts=n_pts, title=f'{series_name} - Positive CDF')
+
+    plt.subplot(1, 2, 2)
+    _plot_log_cdf_function(dict_dist, ret_data, True, ref_fn, x_lim=x_lim, ret_marker=ret_marker,
+                           y_lim=y_lim, n_pts=n_pts, title=f'{series_name} - Negative CDF')
     plt.show()

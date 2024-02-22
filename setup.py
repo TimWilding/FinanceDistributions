@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1' 
+VERSION = '0.0.1'
 DESCRIPTION = 'Statistical Distributions for Fast Fitting'
 LONG_DESCRIPTION = 'A couple of distributions with skewness and kurtosis parameters that allow fast fitting'
 
 # Setting up
 setup(
-       # the name must match the folder name 'verysimplemodule'
+        # the name must match the folder name 'verysimplemodule'
         name="FastDistributions", 
         version=0.9,
         author="Tim Wilding",
@@ -14,9 +14,8 @@ setup(
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
-        install_requires=['numpy', 'matplotlib', 'yfinance', 'scipy',' Py-BOBYQA', 'seaborn'], # add any additional packages that 
-        # needs to be installed along with your package. Eg: 'caer' -0 what about PyBobyQA
-        
+        # add any additional packages that need installing
+        install_requires=['numpy', 'matplotlib', 'yfinance', 'scipy',' Py-BOBYQA', 'seaborn'],        
         keywords=['python', 'first package'],
         classifiers= [
             "Development Status :: 3 - Alpha",

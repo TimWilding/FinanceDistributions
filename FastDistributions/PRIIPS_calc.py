@@ -8,6 +8,7 @@ from scipy.stats import norm
 from scipy.special import hermitenorm
 from .stat_functions import parallel_bootstrap
 
+
 def Cornish_Fisher_percentile(mu, sigma, skew, kurt, holding_period,
                               pctile, periods_in_year):
     """
@@ -27,7 +28,7 @@ def Cornish_Fisher_percentile(mu, sigma, skew, kurt, holding_period,
     and quotes specific coefficients for the skewness, kurtosis and other parameters
     at set percentile points to be used in the calculation of different performance
     statistics.
-    See, for example, page 45-46 of 
+    See, for example, page 45-46 of
     https://www.esma.europa.eu/sites/default/files/library/jc_2016_21_final_draft_rts_priips_kid_report.pdf
     The formulas here are equivalent, but have more significant figures in the coefficients.
     If you're really concerned about this, feel free to type them out!
@@ -40,6 +41,7 @@ def Cornish_Fisher_percentile(mu, sigma, skew, kurt, holding_period,
     x = mu * n + np.sqrt(n)*sigma*w - 0.5*sigma*sigma*n
     return x
 
+
 def convert_VaR_to_volatility(value_at_risk, pctile, holding_period):
     """
     PRIIPS recommended formula for converting a Value At Risk number to
@@ -51,6 +53,7 @@ def convert_VaR_to_volatility(value_at_risk, pctile, holding_period):
     vol = np.sqrt(z_alpha*z_alpha - 2 * value_at_risk) + z_alpha
     vol = vol / np.sqrt(holding_period)
     return vol
+
 
 def volatility_to_MRM_class(VaR_equivalent_vol: float)->int:
     """
@@ -73,6 +76,7 @@ def volatility_to_MRM_class(VaR_equivalent_vol: float)->int:
         return 6
     return 7
 
+
 def calc_moments(returns):
     """
     calc_moments calculates the first 4 moments of an array
@@ -90,12 +94,13 @@ def calc_moments(returns):
     mom_2 = np.sum(excess_returns**2, axis=0)/mom_0
     mom_3 = np.sum(excess_returns**3, axis=0)/mom_0
     mom_4 = np.sum(excess_returns**4, axis=0)/mom_0
- 
+
     sigma = np.sqrt(mom_2)         # St. Dev. Estimate
     skew = mom_3 /(sigma**3)       # Skewness estimat
     kurt = (mom_4 /(sigma**4)) - 3 # Kurtosis estimate
-    
+
     return (mom_1, sigma, skew, kurt)
+
 
 def PRIIPS_stats(returns, holding_period=5, periods_in_year=256):
     """
@@ -126,7 +131,7 @@ def PRIIPS_stats(returns, holding_period=5, periods_in_year=256):
     """
 
     mu, sigma, skew, kurt = calc_moments(returns)
-    
+   
     def local_cf_pctile(x, y, z):
         return  Cornish_Fisher_percentile(x, y, skew, kurt,
                                           holding_period, z,
@@ -157,7 +162,7 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
     """
 
     mu, sigma, skew, kurt = calc_moments(returns)
-    
+ 
     def local_cf_pctile(x, y, z):
         return Cornish_Fisher_percentile(x, y, skew, kurt,
                                          holding_period, z,
@@ -209,7 +214,7 @@ def PRIIPS_stats_array(Z, column_names, holding_period,
                     }
     if sample_name is not None:
         dict_results['Sample'] = [sample_name]*Z.shape[1]
-        
+    
     return pd.DataFrame(dict_results)
 
 def PRIIPS_stats_df(sample_df : pd.DataFrame, holding_period=5,
