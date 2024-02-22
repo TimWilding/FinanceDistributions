@@ -1,10 +1,29 @@
+"""
+Testing module for the FinanceDistributions package
+"""
 import datetime
-import FastDistributions as fd
 import numpy as np
 from scipy.stats import norm
-import pandas as pd
 from pandas import read_csv
+import matplotlib.pyplot as plt
+import seaborn as sns
+import FastDistributions as fd
 
+
+def plot_stats_col(df, col_name, axis_label, chart_title):
+    """
+    Plot each of the indices on chart from the statistics daata set
+    """
+    df_sort = df.sort_values(['Identifier', 'Date'])
+
+# Plot the time series for each asset using Seaborn
+    _, _ = plt.subplots(figsize=(6, 4))
+    sns.lineplot(data=df_sort, x='Date', y=col_name, hue='Identifier')
+    plt.ylabel(axis_label)
+    plt.title(chart_title)
+
+# Display the plot
+    plt.show()
 
 def norm_fn(ret_data):
     """
@@ -20,6 +39,10 @@ def norm_fn(ret_data):
     return x
 
 def test_bootstrap():
+    """
+    Test the parallel bootstrap routine by fitting several normal distributions
+    to a data sample downloaded by Yahoo Finance
+    """
     nbs = 100
     lst_indices = [('^GSPC', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')]
     df_ret = fd.download_yahoo_returns(lst_indices)
@@ -29,7 +52,9 @@ def test_bootstrap():
     return
 
 def test_priips():
-
+    """
+    Test the PRIIPS calculation functions on a data set contained in Github
+    """
     MIN_DATE_FILTER = datetime.datetime(2004, 1, 1) # beginning of sample 'Jan 2004' - Jan 7 results in similar
     df_price_history = fd.calculate_returns(read_csv('https://raw.githubusercontent.com/TimWilding/FinanceDataSet/main/PRIIPS_Data_Set.csv', parse_dates=[1]),
                                        'Index', 'Date')
@@ -37,8 +62,11 @@ def test_priips():
 
     df_price_history = df_price_history[df_price_history.Date>=MIN_DATE_FILTER] # Note - this removes NaNs from initial price points in LogReturn column
 
-    back_fn = lambda x : fd.PRIIPS_stats_df(x, use_new=False, holding_period=5)
-    df_backtest_old = fd.rolling_backtest(df_price_history, back_fn, rolling_window_years=5, rolling_start_years=15)
+    df_backtest_old = fd.rolling_backtest(df_price_history,
+                                          lambda x : fd.PRIIPS_stats_df(x, use_new=False, holding_period=5),
+                                          rolling_window_years=5, rolling_start_years=15)
+    
+    plot_stats_col(df_backtest_old, 'Favourable', 'Performance', 'Favourable (Orig)')
     df_sample_5y = df_price_history[(df_price_history.Date>datetime.datetime(2018, 10, 27))
                                 & (df_price_history.Date<=datetime.datetime(2023, 10, 27))]   
     df_bs = fd.PRIIPS_stats_bootstrap(df_sample_5y)
@@ -61,7 +89,25 @@ def calc_correl(df):
     lower_triangle.columns = ['Name1', 'Name2', 'correlation']
     return lower_triangle.sort_values(by=['Name1', 'Name2'], ascending=[True, True])
 
+def test_correl():
+    """
+    Rolling backtest of correlations
+    """
+    BACKTEST_YEARS = 15 # Number of years to use for backtest
+    WINDOW_YEARS = 2 # Number of years to use for calculation of correlation
+    lst_indices = [('^GSPC', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
+#lst_indices = [('^SP500TR', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
+    df_prices = fd.download_yahoo_returns(lst_indices)
+
+    df_month = df_prices.groupby(['Name', 'EndOfMonth']).agg({'LogReturn':'sum'}).reset_index().rename({'EndOfMonth' : 'Date'})
+    df_month.columns = ['Name', 'Date', 'LogReturn']
+    df_roll_month_correls = fd.rolling_backtest(df_month, calc_correl, WINDOW_YEARS, BACKTEST_YEARS)
+
+
 def test_dists():
+    """
+    Test the distribution fitting code using data downloaded from Yahoo Finance
+    """
     # alpha = stability parameter (0, 2]
     #beta = skewness parameter [-1, 1]
     #ls = levy_stable(2.0, 0.0, loc=0, scale=1.0 )
@@ -75,18 +121,27 @@ def test_dists():
 
     sp_ret = df_ret[df_ret.Ticker=='^GSPC']['LogReturn'].values
 
-    ls = fd.LevyStableInterp.fitclass(sp_ret)
-    gs = fd.GeneralisedSkewT.fitclass(sp_ret)
-    #plot_function(lambda x : gsd.pdf(x), title='Skewed Lapace', fn_2=lambda x : gsd_skew.pdf(x))
-    dict_pdf = {
-            'Levy-Stable' : [ls.pdf, 'b-'],
-            'Generalised SkewT' : [gs.pdf, 'k-']
-            }
+    ls_fit = fd.LevyStableInterp.fitclass(sp_ret)
+    gs_fit = fd.GeneralisedSkewT.fitclass(sp_ret)
+    norm_mod = norm.fit(sp_ret)
+    norm_fit = norm(norm_mod[0], norm_mod[1])
+
+    lst_dist = {
+                'Levy-Stable': [ls_fit.cdf, 'r-'],
+                'Normal':      [ norm_fit.cdf, 'b-'],
+                'Generalised SkewT': [gs_fit.cdf, 'g-']
+                }
+    ref_fn = [lambda x: 0.01*(x)**(-1.6), 'y--', 'Power Law']
+    fd.plot_log_cdf(lst_dist, sp_ret, ref_fn, x_lim=[-0.5, 1.5], y_lim=[1e-5, 1], n_pts=25)
+    dict_pdf =  {
+                'Levy-Stable' : [ls_fit.pdf, 'b-'],
+                'Generalised SkewT' : [gs_fit.pdf, 'k-']
+                }
     fd.plot_hist_fit(sp_ret, 'SP 500', dict_pdf, 50, log_scale=True)
-    dict_ppf = {
-                'Levy-Stable' : [ls.ppf, 'bo'],
-                'Generalised SkewT' : [gs.ppf, 'go']
-               }
+    dict_ppf =  {
+                'Levy-Stable' : [ls_fit.ppf, 'bo'],
+                'Generalised SkewT' : [gs_fit.ppf, 'go']
+                }
     fd.plot_qq(sp_ret, 'SP500 Returns', dict_ppf, nbins=500)
 
     print('Finished testing')
