@@ -7,6 +7,7 @@ import urllib.request
 import numpy as np
 import pybobyqa
 from scipy.stats import levy_stable, FitError
+from scipy.ndimage import map_coordinates
 
 LOC_VAR = 0
 SCALE_VAR = 1
@@ -16,17 +17,52 @@ BETA_VAR = 2 # K>0
 INTERP_FILE_ID = 'https://www.dropbox.com/scl/fi/ep42m99qba2kekr7w5qz8/ll_levy_stable_interp_tan.pickle?rlkey=l47vzadf8ch7zabu5pakjtf63&dl=0'
 DESTINATION = 'model.pkl'
 
+class CartesianGridInterpolator:
+    """
+    This is an interpolator for a Cartesian Grid - where the grid values
+    are evenly spaced
+    This code is taken from the page about regular grid interpolation
+    It is much faster than RGI because the grid is evenly spaced
+    https://docs.scipy.org/doc/scipy/tutorial/interpolate/ND_regular_grid.html
+    """
+    def __init__(self, points, values, method='linear'):
+        self.limits = np.array([[min(x), max(x)] for x in points])
+        self.values = np.asarray(values, dtype=float)
+        self.order = {'linear': 1, 'cubic': 3, 'quintic': 5}[method]
 
+    def __call__(self, xi):
+        """
+        `xi` here is an array-like (an array or a list) of points.
+
+        Each "point" is an ndim-dimensional array_like, representing
+        the coordinates of a point in ndim-dimensional space.
+        """
+        xi = np.asarray(xi)
+
+        # convert from data coordinates to pixel coordinates
+        ns = self.values.shape
+        coords = [(n-1)*(val - lo) / (hi - lo)
+                  for val, n, (lo, hi) in zip(xi, ns, self.limits)]
+
+        # interpolate
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.map_coordinates.html
+        return map_coordinates(self.values, coords,
+                               order=self.order,
+                               cval=np.nan)  # fill_value
+    
 opener = urllib.request.build_opener()
 opener.addheaders = [('User-agent',  'Wget/1.16 (linux-gnu)')]
 urllib.request.install_opener(opener)
 urllib.request.urlretrieve(INTERP_FILE_ID, DESTINATION)
+
 with open(DESTINATION, 'rb') as handle:
     GRID_INT = pickle.load(handle)
     min_pdf_val = np.min(GRID_INT.values[np.isfinite(GRID_INT.values)])
     GRID_INT.values[~np.isfinite(GRID_INT.values)] = min_pdf_val - 100
     GRID_INT.bounds_error = False
-
+    
+# Convert the grid interpolator to a Cartesian Grid Interpolator because it is much faster
+GRID_INT = CartesianGridInterpolator(GRID_INT.grid, GRID_INT.values, method='cubic')
 
 class LevyStableInterp():
     @staticmethod
@@ -56,7 +92,7 @@ class LevyStableInterp():
         at_vals[at_vals<-MAX_AT_VAL*math.pi/2] = -MAX_AT_VAL*math.pi/2
 #          print('NORM:   Maximum = {0}, Minimum = {1}'.format(np.max(norm_x), np.min(norm_x)))
 #          print('ARCTAN: Maximum = {0}, Minimum = {1}'.format(np.max(at_vals), np.min(at_vals)))
-        log_like = GRID_INT((alpha_use, beta_use, at_vals), method='linear') - np.log(scale)
+        log_like = GRID_INT((alpha_use, beta_use, at_vals)) - np.log(scale)
         return log_like
 
     @staticmethod

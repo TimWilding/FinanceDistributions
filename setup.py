@@ -12,6 +12,7 @@ setup(
         version=0.9,
         author="Tim Wilding",
         author_email="tim_wilding@yahoo.com",
+        url='https://github.com/TimWilding/FinanceDistributions',
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
