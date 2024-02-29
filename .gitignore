@@ -1,4 +1,5 @@
 *.pkl
+*.pyc
 /.pytest_cache
 /FastDistributions/__pycache__
 /FastDistributions/.vscode

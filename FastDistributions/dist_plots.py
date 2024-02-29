@@ -94,7 +94,7 @@ def plot_qq(data, series_name, dict_fn, nbins=500,
     see https://en.wikipedia.org/wiki/Q%E2%80%93Q_plot
     Plot a q-q plot for several distributions using the functions defined
     in the dictionary. 
-       - data = sample data
+       - data = numpy array containing sample data
        - series_name = name of series used to construct plot title
        - dict_fn = dictionary of functions used to calculate the distribution
                    quantiles (typically, dist.ppf for sci.stats distributions)
@@ -145,21 +145,34 @@ def plot_qq(data, series_name, dict_fn, nbins=500,
     plt.show()
 
 def _calc_cum_fn(ret_data):
+    """
+    Function to calculate performance from log returns with first
+    date indexed to 100.
+    """
     return 100*np.exp((ret_data -ret_data.iloc[0] + 1.0)/100.0)
 
-def plot_indexed_prices(df_returns:pd.DataFrame, col_name='LogReturn', axis_label='Value',
-                        id_field='Index', date_field='Date'):
+def plot_indexed_prices(df_returns:pd.DataFrame, log_return_col='LogReturn', axis_label='Value',
+                        id_field='Index', date_field='Date', log_scale=False):
     """
-    Plot each of the indices on chart for the performance dataset
-    Performance is indexed to 100 on the first day
+    Plot each of the indices on chart for a performance dataset containing
+    log returns.
+    Performance is indexed to 100 on the first date of the dataset
+    - df_returns - dataframe containing at least three columns - id, date, and log return
+    - log_return_col - column containing log returns
+    - id_field used to separate out the price series
+    - date_field contains the date 
+    - col_name = column containing log returns
+    - log_scale = use a log scale for the plot
     """
     df_sort = df_returns.sort_values([id_field, date_field])
-    df_sort['CumLogRet'] = df_returns.groupby(id_field)[col_name].cumsum()
+    df_sort['CumLogRet'] = df_returns.groupby(id_field)[log_return_col].cumsum()
     df_sort['IndexedPrice'] = df_sort.groupby(id_field)['CumLogRet'].transform(_calc_cum_fn)
 
 # Plot the time series for each asset using Seaborn
     sns.lineplot(data=df_sort, x=date_field, y='IndexedPrice', hue=id_field)
     plt.ylabel(axis_label)
+    if log_scale:
+        plt.yscale('log')
 
 # Display the plot
     plt.show()

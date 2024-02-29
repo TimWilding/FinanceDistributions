@@ -1,10 +1,12 @@
 """
 Utility functions for downloading data from e.g. yfinance
 """
+
 from multiprocessing.pool import ThreadPool
 import numpy as np
 import pandas as pd
 import yfinance as yf
+
 
 def _download_single_asset(asset, download_period, start, end):
     """
@@ -21,24 +23,29 @@ def _download_single_asset(asset, download_period, start, end):
             df_history = yf.Ticker(ticker).history(start=start)
         else:
             df_history = yf.Ticker(ticker).history(start=start, end=end)
-    df_history['Ticker'] = ticker
-    df_history['Name'] = asset[1]
+    df_history["Ticker"] = ticker
+    df_history["Name"] = asset[1]
     df_history = df_history.reset_index()
     return df_history
 
 
-
-def download_yahoo_returns(assets, download_period='20y', endweekday:int=2,
-                           start=None, end=None, threads:int=4)->pd.DataFrame:
+def download_yahoo_returns(
+    assets,
+    download_period="20y",
+    endweekday: int = 2,
+    start=None,
+    end=None,
+    threads: int = 4,
+) -> pd.DataFrame:
     """
     Takes the list of assets and downloads them from Yahoo Finance
-    using the tickers - calculates daily returns, and adds a marker 
+    using the tickers - calculates daily returns, and adds a marker
     for weekly and monthly returns if you need to calculate those as well
     Assets is a list of tuples like
         [('^GSPC', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')]
-    The first entryof each tuple is the Yahoo ticker, 
+    The first entryof each tuple is the Yahoo ticker,
     and the second entry is a long name
-    
+
     Available download period parameters are:
         period =  1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
     or you can specify start and end date:
@@ -54,12 +61,14 @@ def download_yahoo_returns(assets, download_period='20y', endweekday:int=2,
     pool = ThreadPool(processes=threads)
     lst_results = []
     for dl_asset in assets:
-        print(f'Downloading {dl_asset[1]}')
-        lst_results.append(pool.apply_async(_download_single_asset,
-                                            (dl_asset, download_period, start, end)))
+        print(f"Downloading {dl_asset[1]}")
+        lst_results.append(
+            pool.apply_async(
+                _download_single_asset, (dl_asset, download_period, start, end)
+            )
+        )
 
-
-    df_out= None
+    df_out = None
     for result in lst_results:
         df_history = result.get()
         if df_history is not None:
@@ -68,27 +77,35 @@ def download_yahoo_returns(assets, download_period='20y', endweekday:int=2,
             else:
                 df_out = pd.concat([df_out, df_history])
 
-    print('Completed Download')
+    print("Completed Download")
     # Convert to datetime and drop timezone info
-    df_out['Date'] = pd.to_datetime(df_out['Date'], utc=True).dt.normalize()
+    df_out["Date"] = pd.to_datetime(df_out["Date"], utc=True).dt.normalize()
 
-    return calculate_returns(df_out, 'Ticker', 'Date', endweekday=endweekday)
+    return calculate_returns(df_out, "Ticker", "Date", endweekday=endweekday)
 
-def calculate_returns(df, identifier_field='Ticker', date_field='Date',
-                      price_field='Close', endweekday:int=2)->pd.DataFrame:
+
+def calculate_returns(
+    df,
+    identifier_field="Ticker",
+    date_field="Date",
+    price_field="Close",
+    endweekday: int = 2,
+) -> pd.DataFrame:
     """
     Calculate returns for a dataframe with three columns - id, date,
     and price
     """
     # Calculate the returns
     df_out = df
-    df_out.loc[:, 'LogPrice'] = np.log(df_out[price_field])
+    df_out.loc[:, "LogPrice"] = np.log(df_out[price_field])
     df_out.sort_values([identifier_field, date_field], inplace=True)
-    df_out['LogReturn'] = 100*df_out.groupby(identifier_field)['LogPrice'].diff()
-     # Calculate end of month
-    df_out.loc[:, 'EndOfMonth'] = df_out[date_field] + pd.offsets.MonthEnd(0)
+    df_out["LogReturn"] = 100 * df_out.groupby(identifier_field)["LogPrice"].diff()
+    # Calculate end of month
+    df_out.loc[:, "EndOfMonth"] = df_out[date_field] + pd.offsets.MonthEnd(0)
     # Calculate end of the week (assuming the week ends on Wednesday)
-    df_out.loc[:, 'EndOfWeek'] = df_out[date_field] + pd.offsets.Week(weekday=endweekday)
-    df_out = df_out.dropna() # get rid of the log returns that are rubbish
-    print('Calculated Returns')
+    df_out.loc[:, "EndOfWeek"] = df_out[date_field] + pd.offsets.Week(
+        weekday=endweekday
+    )
+    df_out = df_out.dropna()  # get rid of the log returns that are rubbish
+    print("Calculated Returns")
     return df_out
