@@ -24,7 +24,7 @@ setup(
         "matplotlib",
         "yfinance",
         "scipy",
-        " Py-BOBYQA",
+        "Py-BOBYQA",
         "seaborn",
     ],
     keywords=["python", "first package"],

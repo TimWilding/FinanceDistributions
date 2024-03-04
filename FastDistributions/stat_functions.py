@@ -3,10 +3,9 @@ Routine to do a parallel bootstrap
 """
 
 from multiprocessing.pool import ThreadPool
-import datetime
+import time
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
-import time
 import pandas as pd
 import numpy as np
 
@@ -122,9 +121,6 @@ def rolling_backtest_date_function(
     # Set the initial rolling window end date to the latest date
     rolling_window_end = latest_date
 
-    # Create an empty DataFrame to store the rolling subset
-    rolling_subset = pd.DataFrame(columns=["Index", "Date", "LogReturn"])
-
     # Define the number of rolling windows you want (e.g., 5 years with 5-year gaps)
 
     start_date = latest_date - relativedelta(years=rolling_start_years)
@@ -197,7 +193,9 @@ def rolling_backtest(
     sample_freq=relativedelta(days=1),
     skip_periods: int = 500,
 ) -> pd.DataFrame:
-    sample_fn = lambda x, y: _backtest_fn(df_history, x, y, back_fn)
+    def sample_fn(x, y):
+        return _backtest_fn(df_history, x, y, back_fn)
+
     return rolling_backtest_date_function(
         df_history,
         sample_fn,
