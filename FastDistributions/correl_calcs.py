@@ -1,6 +1,7 @@
 """
 Various correlation calcs adjusting for serial correlation
 """
+
 import numpy as np
 import scipy.linalg as sla
 
@@ -29,7 +30,6 @@ def ols_regress(Y, X):
     Bx = Be[1:, :]  # est. betas
     B0 = Be[0:1, :]  # est. alphas
     return (B0, Bx, Ee, se)
-
 
 
 def adjusted_correl(X, lag=1):
@@ -66,20 +66,28 @@ def newey_adj_cov(X, lag=1):
     Use the Newey-West (1987) adjusted covariance matrix
     to produce a robust estimate of the covariance
     matrix adjusted for serial correlation
+    Inputs
+    X = t x n matrix of observations
+        t = number of samples
+        n = number of variables
+    lag = number of lags to use for estimator
+        = -1 use estimate of lags
+    Outputs
+    n x n covariance matrix
     """
     gamma = np.dot(X.T, X)
     # Use Bartlett Weighting Scheme
     t = X.shape[0]
     p = lag
     if lag == -1:
-        # Determine the number of samples
+        # Determine the number of lags to use
         # based on the sample size
         p = int(0.75 * t ** (1 / 3))
-    for j in range(1, p):
+    for j in range(1, p + 1):
         w = 1 - (float(j) / float(p + 1))
         gamma_lag = np.dot(X[0 : t - j, :].T, X[j:t, :])
         gamma = gamma + w * (gamma_lag + gamma_lag.T)
-    return gamma / X.shape[0]
+    return gamma / t
 
 
 def newey_adj_corr(X, lag=1):
