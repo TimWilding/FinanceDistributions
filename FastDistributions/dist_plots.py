@@ -176,6 +176,14 @@ def _calc_cum_fn(ret_data):
     return 100 * np.exp((ret_data - ret_data.iloc[0] + 1.0) / 100.0)
 
 
+def _calc_cum_fn(ret_data):
+    """
+    Function to calculate performance from log returns with first
+    date indexed to 100.
+    """
+    return 100 * np.exp((ret_data - ret_data.iloc[0] + 1.0) / 100.0)
+
+
 def plot_indexed_prices(
     df_returns: pd.DataFrame,
     log_return_col="LogReturn",
@@ -183,6 +191,7 @@ def plot_indexed_prices(
     id_field="Index",
     date_field="Date",
     log_scale=False,
+    match_return=None,
 ):
     """
     Plot each of the indices on chart for a performance dataset containing
@@ -194,9 +203,23 @@ def plot_indexed_prices(
     - date_field contains the date
     - col_name = column containing log returns
     - log_scale = use a log scale for the plot
+    - match_return = identifier so that all returns are scaled the same
     """
+    if match_return is not None:
+        sum_returns = df_returns.groupby("Ticker")[log_return_col].sum()
+        df_returns["Scaled_Return"] = df_returns.apply(
+            lambda row: row[log_return_col]
+            * sum_returns.loc[match_return]
+            / (sum_returns.loc[row["Ticker"]]),
+            axis=1,
+        )
     df_sort = df_returns.sort_values([id_field, date_field])
-    df_sort["CumLogRet"] = df_returns.groupby(id_field)[log_return_col].cumsum()
+
+    if match_return is not None:
+        df_sort["CumLogRet"] = df_returns.groupby(id_field)["Scaled_Return"].cumsum()
+    else:
+        df_sort["CumLogRet"] = df_returns.groupby(id_field)[log_return_col].cumsum()
+
     df_sort["IndexedPrice"] = df_sort.groupby(id_field)["CumLogRet"].transform(
         _calc_cum_fn
     )

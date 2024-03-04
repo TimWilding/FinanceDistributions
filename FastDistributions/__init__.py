@@ -14,6 +14,12 @@ from FastDistributions.PRIIPS_calc import (
     PRIIPS_stats_df,
     PRIIPS_stats_bootstrap,
 )
+from FastDistributions.correl_calcs import (
+    newey_adj_corr,
+    newey_adj_cov,
+    adjusted_correl,
+    nearest_pos_def,
+)
 from FastDistributions.stat_functions import (
     parallel_bootstrap,
     rolling_backtest,

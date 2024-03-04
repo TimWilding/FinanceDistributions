@@ -4,6 +4,7 @@ Testing module for the FinanceDistributions package
 
 import datetime
 import numpy as np
+import pandas as pd
 from scipy.stats import norm
 from pandas import read_csv
 import matplotlib.pyplot as plt
@@ -88,7 +89,7 @@ def test_priips():
     return
 
 
-def calc_correl(df):
+def calc_correl(df, lag=1):
     """
     given a dataframe with columns - Identifier, Date, and LogReturn
     calculate a correlation matrix for each of the identifiers.
@@ -105,6 +106,19 @@ def calc_correl(df):
     lower_triangle.columns = ["Name1", "Name2", "correlation"]
     return lower_triangle.sort_values(by=["Name1", "Name2"], ascending=[True, True])
 
+def calc_adj_corr(df, lag=1):
+    pivot_df = df.pivot(index='Date', columns='Name', values='LogReturn')
+    pivot_df = pivot_df.dropna()
+    lst_names = df['Name'].unique()
+    X = pivot_df[lst_names].values
+    corr_mat = fd.newey_adj_corr(X, lag)
+    df_corr = pd.DataFrame(corr_mat, columns=lst_names)
+    df_corr['Name'] = lst_names
+    df_corr.set_index('Name', inplace=True)
+    lower_triangle = df_corr.where(np.tril(np.ones(df_corr.shape), k=-1).astype(bool))
+    lower_triangle = lower_triangle.rename_axis('Names').stack().reset_index()
+    lower_triangle.columns = ['Name1', 'Name2', 'correlation']
+    return lower_triangle.sort_values(by=['Name1', 'Name2'], ascending=[True, True])
 
 def test_correl():
     """
@@ -128,7 +142,7 @@ def test_correl():
     )
     df_month.columns = ["Name", "Date", "LogReturn"]
     df_roll_month_correls = fd.rolling_backtest(
-        df_month, calc_correl, WINDOW_YEARS, BACKTEST_YEARS
+        df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS
     )
 
 
