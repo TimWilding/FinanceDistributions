@@ -1,5 +1,6 @@
 from FastDistributions.generalised_skewt import GeneralisedSkewT
 from FastDistributions.levy_stable import LevyStableInterp
+from FastDistributions.t_dist_calcs import TDist
 from FastDistributions.dist_plots import (
     plot_function,
     plot_hist_fit,

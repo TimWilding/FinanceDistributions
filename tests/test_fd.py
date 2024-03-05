@@ -145,6 +145,21 @@ def test_correl():
         df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS
     )
 
+def test_robust_correl():
+    """
+    Test robust correlation
+    """
+    lst_indices = [
+        ("^GSPC", "SP 500"),
+        ("^FTSE", "FTSE 100"),
+        ("^N225", "Nikkei 225"),
+    ]  # , ('VWRA.L', 'Vanguard FTSE All-World')
+    # lst_indices = [('^SP500TR', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
+    df_prices = fd.download_yahoo_returns(lst_indices, download_period='5y')
+    pivot_df = df_prices.pivot(index='Date', columns='Name', values='LogReturn')
+    pivot_df = pivot_df.dropna()
+    (samp_ave, samp_covar, nu) =  fd.TDist.em_fit(pivot_df.values, dof=-8.0)
+
 
 def test_dists():
     """

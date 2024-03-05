@@ -61,7 +61,7 @@ def adjusted_correl(X, lag=1):
     return nearest_pos_def(corr_mat + corr_mat.T)
 
 
-def newey_adj_cov(X, lag=1):
+def newey_adj_cov(X, lag=1, demean=True):
     """
     Use the Newey-West (1987) adjusted covariance matrix
     to produce a robust estimate of the covariance
@@ -75,13 +75,18 @@ def newey_adj_cov(X, lag=1):
     Outputs
     n x n covariance matrix
     """
+    if demean:
+        X = X - np.mean(X, axis=0)
     gamma = np.dot(X.T, X)
+
     # Use Bartlett Weighting Scheme
     t = X.shape[0]
     p = lag
     if lag == -1:
         # Determine the number of lags to use
         # based on the sample size
+        # Stock and Watson (2003) formula
+        
         p = int(0.75 * t ** (1 / 3))
     for j in range(1, p + 1):
         w = 1 - (float(j) / float(p + 1))
