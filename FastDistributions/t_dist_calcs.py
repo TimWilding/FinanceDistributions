@@ -193,4 +193,4 @@ class TDist:
         if display_progress:
             print(f"Total time taken: {time.time()-start} s")
 
-        return (samp_ave, samp_covar, nu)
+        return (samp_ave, samp_covar, nu, tau)
