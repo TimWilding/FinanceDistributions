@@ -100,15 +100,13 @@ class TDist:
         new_max = max_dof
         fun_brack = (min_dof, nu, max_dof)
 
-        # Maybe work out the gradient  before calling
+        # Maybe work out the gradient before calling
         try:
             res = sopt.brent(fp, brack=fun_brack, full_output=True)
         except ValueError:
-            print("Resetting brackets")
             try:
                 res = sopt.brent(fp, brack=(MIN_DOF, nu, MAX_DOF), full_output=True)
             except ValueError:
-                print("Resetting brackets Completely")
                 res = sopt.fminbound(fp, MIN_DOF, MAX_DOF, full_output=True)
 
         nu_ret = nu
