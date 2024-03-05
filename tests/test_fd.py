@@ -1,7 +1,6 @@
 """
 Testing module for the FinanceDistributions package
 """
-
 import datetime
 import numpy as np
 import pandas as pd
@@ -106,19 +105,21 @@ def calc_correl(df, lag=1):
     lower_triangle.columns = ["Name1", "Name2", "correlation"]
     return lower_triangle.sort_values(by=["Name1", "Name2"], ascending=[True, True])
 
+
 def calc_adj_corr(df, lag=1):
-    pivot_df = df.pivot(index='Date', columns='Name', values='LogReturn')
+    pivot_df = df.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
-    lst_names = df['Name'].unique()
+    lst_names = df["Name"].unique()
     X = pivot_df[lst_names].values
     corr_mat = fd.newey_adj_corr(X, lag)
     df_corr = pd.DataFrame(corr_mat, columns=lst_names)
-    df_corr['Name'] = lst_names
-    df_corr.set_index('Name', inplace=True)
+    df_corr["Name"] = lst_names
+    df_corr.set_index("Name", inplace=True)
     lower_triangle = df_corr.where(np.tril(np.ones(df_corr.shape), k=-1).astype(bool))
-    lower_triangle = lower_triangle.rename_axis('Names').stack().reset_index()
-    lower_triangle.columns = ['Name1', 'Name2', 'correlation']
-    return lower_triangle.sort_values(by=['Name1', 'Name2'], ascending=[True, True])
+    lower_triangle = lower_triangle.rename_axis("Names").stack().reset_index()
+    lower_triangle.columns = ["Name1", "Name2", "correlation"]
+    return lower_triangle.sort_values(by=["Name1", "Name2"], ascending=[True, True])
+
 
 def test_correl():
     """
@@ -145,6 +146,7 @@ def test_correl():
         df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS
     )
 
+
 def test_robust_correl():
     """
     Test robust correlation
@@ -155,10 +157,15 @@ def test_robust_correl():
         ("^N225", "Nikkei 225"),
     ]  # , ('VWRA.L', 'Vanguard FTSE All-World')
     # lst_indices = [('^SP500TR', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
-    df_prices = fd.download_yahoo_returns(lst_indices, download_period='5y')
-    pivot_df = df_prices.pivot(index='Date', columns='Name', values='LogReturn')
+    df_prices = fd.download_yahoo_returns(lst_indices, download_period="5y")
+    pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
-    (samp_ave, samp_covar, nu) =  fd.TDist.em_fit(pivot_df.values, dof=-8.0)
+    (samp_ave, samp_covar, nu) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
+    samp_corr = fd.corr_conv(samp_covar)
+    (_, norm_cov, _) = fd.TDist.em_fit(pivot_df.values, dof=1000)
+    norm_corr = fd.corr_conv(norm_cov)
+    act_corr = pivot_df.corr()
+    print("Finished")
 
 
 def test_dists():

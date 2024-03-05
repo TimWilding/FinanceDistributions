@@ -176,14 +176,6 @@ def _calc_cum_fn(ret_data):
     return 100 * np.exp((ret_data - ret_data.iloc[0] + 1.0) / 100.0)
 
 
-def _calc_cum_fn(ret_data):
-    """
-    Function to calculate performance from log returns with first
-    date indexed to 100.
-    """
-    return 100 * np.exp((ret_data - ret_data.iloc[0] + 1.0) / 100.0)
-
-
 def plot_indexed_prices(
     df_returns: pd.DataFrame,
     log_return_col="LogReturn",

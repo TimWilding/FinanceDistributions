@@ -86,7 +86,6 @@ def newey_adj_cov(X, lag=1, demean=True):
         # Determine the number of lags to use
         # based on the sample size
         # Stock and Watson (2003) formula
-        
         p = int(0.75 * t ** (1 / 3))
     for j in range(1, p + 1):
         w = 1 - (float(j) / float(p + 1))
@@ -165,15 +164,9 @@ def corr_conv(cov_mat):
     entry should be square positive semi-definite covariance
     matrix
     """
-    _, cols = cov_mat.shape
 
-    corr_mat = np.zeros((cols, cols))
+    sig = np.diag(cov_mat)
 
-    for i in range(cols):
-
-        for j in range(cols):
-
-            # not here that we are just normalizing the covariance matrix
-            corr_mat[i][j] = cov_mat[i, j] / np.sqrt(cov_mat[i, i] * cov_mat[j, j])
+    corr_mat = cov_mat / np.sqrt(np.outer(sig, sig))
 
     return corr_mat

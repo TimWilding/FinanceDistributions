@@ -1,11 +1,11 @@
 import math
+import time
 import numpy as np
 import scipy.optimize as sopt
 from scipy.special import gamma
 from scipy.stats import chi2
 from scipy.integrate import quad
-from scipy import optimize
-import time
+
 
 MIN_DOF = 0.2
 MAX_DOF = 1000
@@ -114,7 +114,6 @@ class TDist:
         nu_ret = nu
         if res[1] < ll_current:
             nu_ret = res[0]
-            range_vals = new_max - new_min
             new_max = min(nu_ret + 2 * abs(nu_ret - nu), MAX_DOF)
             new_min = max(nu_ret - 2 * abs(nu_ret - nu), MIN_DOF)
         return (nu_ret, new_min, new_max)
@@ -141,7 +140,7 @@ class TDist:
         prev_ll = 0.0
         ll = 0.0
         delta_ll = 0.0
-        delta_tau_max = 1.0
+
 
         for iter_num in range(1, max_iters + 1):
 

@@ -20,6 +20,7 @@ from FastDistributions.correl_calcs import (
     newey_adj_cov,
     adjusted_correl,
     nearest_pos_def,
+    corr_conv,
 )
 from FastDistributions.stat_functions import (
     parallel_bootstrap,
