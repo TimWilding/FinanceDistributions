@@ -170,3 +170,40 @@ def corr_conv(cov_mat):
     corr_mat = cov_mat / np.sqrt(np.outer(sig, sig))
 
     return corr_mat
+
+
+def mahl_dist(samp_ave, samp_covar, returns_data):
+    """
+    Calculate the Mahalanobis Distance using a sample
+    average, covariance for a set of returns data
+    see https://en.wikipedia.org/wiki/Mahalanobis_distance
+    The Mahalanobis distance should be distributed with
+    a Chi-Squared distribution with degrees of freedom
+    equal to p where p is the number of assets
+    Inputs
+    =====================================
+    samp_ave - p vector of sample averages
+    samp_covar - p x p covariance matrix
+    returns_data - n x p matrix of returns
+    Outputs
+    =====================================
+    mahl_dist - n vector of Mahlanobis Distances
+    log_cov_det - log of the determinant of covariance
+                  matrix
+    """
+
+    (_, w, VT) = np.linalg.svd(samp_covar)
+    log_cov_det = np.sum(np.log(w.real))
+    # Use robust inversion by ignoring small
+    # singular values
+    s = np.copy(w.real)
+    rcond =  1e-15 # maybe should be a settable param?
+    cutoff = rcond * np.amax(s, axis=-1, keepdims=True)
+    large = s > cutoff
+    s[~large] = 0
+    s = np.divide(1, s, where=large, out=s)
+    samp_excess = returns_data - samp_ave
+    samp_excess_v = samp_excess @ VT.T
+    s_temp_v = samp_excess_v * s
+    mahl_distances = np.sum(s_temp_v * samp_excess_v, axis=1)
+    return (mahl_distances, log_cov_det)

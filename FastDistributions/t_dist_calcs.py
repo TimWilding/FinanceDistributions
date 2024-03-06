@@ -5,6 +5,7 @@ import scipy.optimize as sopt
 from scipy.special import gamma
 from scipy.stats import chi2
 from scipy.integrate import quad
+from .correl_calcs import mahl_dist
 
 
 MIN_DOF = 0.2
@@ -124,7 +125,7 @@ class TDist:
         nvar = returns_data.shape[1]
         start = time.time()
         tau = np.ones(nobs)
-        mahl_dist = np.ones(nobs)
+        mahl_distances = np.ones(nobs)
 
         nu = dof
         fit_dof = False
@@ -138,27 +139,26 @@ class TDist:
         prev_ll = 0.0
         ll = 0.0
         delta_ll = 0.0
-
+        if display_progress:
+            print('Iteration    Nu      DeltaTau        LL            LL_target')
 
         for iter_num in range(1, max_iters + 1):
 
             # Expected Sufficient Stats
             # tau = a weights scale
             # Calculate tau using mahl distances etc
-            (U, w, VT) = np.linalg.svd(samp_covar)
-            log_cov_det = np.sum(np.log(w.real))
-            samp_excess = returns_data - samp_ave
-            samp_excess_v = samp_excess @ VT.T
-            s_temp_v = samp_excess_v / w
-            mahl_dist = np.sum(s_temp_v * samp_excess_v, axis=1)
+
+            mahl_distances, log_cov_det = mahl_dist(
+                samp_ave, samp_covar, returns_data
+            )
 
             if fit_dof:
                 nu, _, _ = TDist.optimisedegreesoffreedom(
-                    nu, mahl_dist, nvar, log_cov_det, MIN_DOF, MAX_DOF
+                    nu, mahl_distances, nvar, log_cov_det, MIN_DOF, MAX_DOF
                 )
 
             prev_ll = ll
-            ll = np.sum(TDist.llcalc(nu, mahl_dist, nvar, log_cov_det))
+            ll = np.sum(TDist.llcalc(nu, mahl_distances, nvar, log_cov_det))
             log_likelihood.append(ll)
             ll_target = ll
 
@@ -174,14 +174,14 @@ class TDist:
             # Now we have the Mahlanobis distance calculate
             # the weighting scheme
             tau_prev = tau
-            tau = (nu + nvar) / (nu + mahl_dist)
+            tau = (nu + nvar) / (nu + mahl_distances)
             tau[tau < MIN_TAU] = MIN_TAU
             tau[tau > MAX_TAU] = MAX_TAU
 
             delta_tau = np.max(np.abs(tau - tau_prev))
             if display_progress:
                 print(
-                    f"Iteration {iter_num}: nu={nu:7.2f}, delta tau={delta_tau:7.2f}, ll={ll:7.2f}, ll_target={ll_target:7.2f}"
+                    f"{iter_num}         {nu:7.2f} {delta_tau:7.2f}            {ll:7.2f}      {ll_target:7.2f}"
                 )
 
             # Maximum Likelihood
