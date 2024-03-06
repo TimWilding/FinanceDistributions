@@ -21,7 +21,7 @@ from FastDistributions.correl_calcs import (
     adjusted_correl,
     nearest_pos_def,
     corr_conv,
-    mahl_dist,
+    mahal_dist,
 )
 from FastDistributions.stat_functions import (
     parallel_bootstrap,

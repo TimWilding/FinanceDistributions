@@ -172,7 +172,7 @@ def corr_conv(cov_mat):
     return corr_mat
 
 
-def mahl_dist(samp_ave, samp_covar, returns_data):
+def mahal_dist(samp_ave, samp_covar, returns_data):
     """
     Calculate the Mahalanobis Distance using a sample
     average, covariance for a set of returns data
@@ -191,13 +191,12 @@ def mahl_dist(samp_ave, samp_covar, returns_data):
     log_cov_det - log of the determinant of covariance
                   matrix
     """
-
     (_, w, VT) = np.linalg.svd(samp_covar)
     log_cov_det = np.sum(np.log(w.real))
     # Use robust inversion by ignoring small
     # singular values
     s = np.copy(w.real)
-    rcond =  1e-15 # maybe should be a settable param?
+    rcond = 1e-15  # maybe should be a settable param?
     cutoff = rcond * np.amax(s, axis=-1, keepdims=True)
     large = s > cutoff
     s[~large] = 0
@@ -205,5 +204,5 @@ def mahl_dist(samp_ave, samp_covar, returns_data):
     samp_excess = returns_data - samp_ave
     samp_excess_v = samp_excess @ VT.T
     s_temp_v = samp_excess_v * s
-    mahl_distances = np.sum(s_temp_v * samp_excess_v, axis=1)
-    return (mahl_distances, log_cov_det)
+    mahal_distances = np.sum(s_temp_v * samp_excess_v, axis=1)
+    return (mahal_distances, log_cov_det)

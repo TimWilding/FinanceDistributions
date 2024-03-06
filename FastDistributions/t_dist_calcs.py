@@ -5,7 +5,7 @@ import scipy.optimize as sopt
 from scipy.special import gamma
 from scipy.stats import chi2
 from scipy.integrate import quad
-from .correl_calcs import mahl_dist
+from .correl_calcs import mahal_dist
 
 
 MIN_DOF = 0.2
@@ -125,7 +125,7 @@ class TDist:
         nvar = returns_data.shape[1]
         start = time.time()
         tau = np.ones(nobs)
-        mahl_distances = np.ones(nobs)
+        mahal_distances = np.ones(nobs)
 
         nu = dof
         fit_dof = False
@@ -146,19 +146,19 @@ class TDist:
 
             # Expected Sufficient Stats
             # tau = a weights scale
-            # Calculate tau using mahl distances etc
+            # Calculate tau using mahalanobis distances etc
 
-            mahl_distances, log_cov_det = mahl_dist(
+            mahal_distances, log_cov_det = mahal_dist(
                 samp_ave, samp_covar, returns_data
             )
 
             if fit_dof:
                 nu, _, _ = TDist.optimisedegreesoffreedom(
-                    nu, mahl_distances, nvar, log_cov_det, MIN_DOF, MAX_DOF
+                    nu, mahal_distances, nvar, log_cov_det, MIN_DOF, MAX_DOF
                 )
 
             prev_ll = ll
-            ll = np.sum(TDist.llcalc(nu, mahl_distances, nvar, log_cov_det))
+            ll = np.sum(TDist.llcalc(nu, mahal_distances, nvar, log_cov_det))
             log_likelihood.append(ll)
             ll_target = ll
 
@@ -174,7 +174,7 @@ class TDist:
             # Now we have the Mahlanobis distance calculate
             # the weighting scheme
             tau_prev = tau
-            tau = (nu + nvar) / (nu + mahl_distances)
+            tau = (nu + nvar) / (nu + mahal_distances)
             tau[tau < MIN_TAU] = MIN_TAU
             tau[tau > MAX_TAU] = MAX_TAU
 
