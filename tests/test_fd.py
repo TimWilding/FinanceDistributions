@@ -168,6 +168,14 @@ def test_robust_correl():
     print("Finished")
 
 
+def test_yf():
+    """
+    Test the Yahoo Finance Download
+    """
+    lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225"), ("BTC-USD", "Bitcoin")]
+    df_download = fd.download_yahoo_returns(lst_indices)
+    df_download.to_csv('asset_returns.csv')    
+
 def test_dists():
     """
     Test the distribution fitting code using data downloaded from Yahoo Finance
@@ -180,7 +188,7 @@ def test_dists():
     gsd = fd.GeneralisedSkewT(0, 1.0, 0.2, 1, 1000)
     gsd_skew = fd.GeneralisedSkewT(0, 1.0, 0.2, 2.0, 1000)
     print(gsd.pdf(-1.0))
-    lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225")]
+    lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225"), ('WFBIX', 'US Aggregate Bond Index')]
     df_ret = fd.download_yahoo_returns(lst_indices)
 
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values

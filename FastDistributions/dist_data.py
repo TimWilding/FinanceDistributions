@@ -103,9 +103,9 @@ def calculate_returns(
     # Calculate end of month
     df_out.loc[:, "EndOfMonth"] = df_out[date_field] + pd.offsets.MonthEnd(0)
     # Calculate end of the week (assuming the week ends on Wednesday)
-    df_out.loc[:, "EndOfWeek"] = df_out[date_field] + pd.offsets.Week(
-        weekday=endweekday
-    )
+    df_out.loc[:, "EndOfWeek"] = (
+        df_out[date_field] + pd.offsets.Day(-1)
+    ) + pd.offsets.Week(weekday=endweekday)
     df_out = df_out.dropna()  # get rid of the log returns that are rubbish
     print("Calculated Returns")
     return df_out
