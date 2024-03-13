@@ -7,6 +7,8 @@ from FastDistributions.dist_plots import (
     plot_qq,
     plot_indexed_prices,
     plot_log_cdf,
+    plot_mahal_cdf,
+    plot_mahal_dist,
 )
 from FastDistributions.dist_data import download_yahoo_returns, calculate_returns
 from FastDistributions.PRIIPS_calc import (

@@ -12,16 +12,41 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import scipy.stats
+from scipy.stats import chi2, rankdata
 
 
-def plot_hist_fit(data, series_name, dict_fn, nbins=20, log_scale=False, ylim=None):
+def plot_hist_fit(
+    data,
+    series_name,
+    dict_fn,
+    nbins=20,
+    log_scale=False,
+    ylim=None,
+    xlabel="Log-Return",
+    ax=None,
+):
     """
     Plots a histogram of some data and then plots several functions over it.
     Those functions are typically distributions fitted to the data such as the
     t-distribution
+    Inputs
+      - data - data to histogram
+      - series_name - name of the series to plot
+      - dict_fn - dictionary of theoretical fits - each fit is a tuple containing
+                  theoretical function and a line marker
+      Optional
+      - log_scale - plot the probability distribution on a log-scale
+      - nbins - number of bins for the histogram
+      - ylim - maximum value of pdf
+      - xlabel - quantity we are histogramming
     """
     # Plot the histogram
-    plt.hist(data, bins=nbins, density=True, alpha=0.7, color="blue", label="Histogram")
+    show = False
+    if ax is None:
+        ax = plt.gca()
+        show = True
+
+    ax.hist(data, bins=nbins, density=True, alpha=0.7, color="blue", label="Histogram")
     x_vals = np.linspace(data.min(), data.max(), 500)
     y_max = 0.0
     y_min = 10000
@@ -31,22 +56,65 @@ def plot_hist_fit(data, series_name, dict_fn, nbins=20, log_scale=False, ylim=No
             y_max = np.max(f_pdf)
         if np.min(f_pdf) < y_min:
             y_min = np.min(f_pdf)
-        plt.plot(x_vals, f_pdf, dict_fn[fn_name][1], label=fn_name)
+        ax.plot(x_vals, f_pdf, dict_fn[fn_name][1], label=fn_name)
 
     # Add labels and legend
-    plt.xlabel("Log-Return")
-    plt.ylabel("Probability Density")
-    plt.title(f"{series_name} Histogram")
-    plt.legend()
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Probability Density")
+    ax.set_title(f"{series_name} Histogram")
+    ax.legend()
     if log_scale:
-        plt.yscale("log")
+        ax.yscale("log")
         if ylim is None:
-            plt.ylim([0.8 * y_min, 1.2 * y_max])
+            ax.ylim([0.8 * y_min, 1.2 * y_max])
         else:
-            plt.ylim(ylim)
+            ax.ylim(ylim)
 
     # Show the plot
-    plt.show()
+    if show:
+        plt.show()
+
+
+def plot_mahal_cdf(chi_sqrd, num_assets, ax=None):
+    """
+    Plot empirical percent rank of mahalanobis distance vs
+    theoretical from Normal distribution
+    """
+    show = False
+    if ax is None:
+        ax = plt.gca()
+        show = True
+    n = chi_sqrd.shape[0]
+    cdf = chi2.cdf(chi_sqrd, num_assets).reshape(n)
+    pct_rank = (rankdata(chi_sqrd / num_assets)) / (n - 1)
+    ax.scatter(pct_rank, cdf)
+    ax.set_title("Mahalanobis Distance")
+    ax.set_xlabel("Percent Rank")
+    ax.set_ylabel("Chi-Squared Probability")
+    sline = np.linspace(0.0, 1.0, 100)
+    ax.plot(sline, sline, "k--")
+    if show:
+        plt.show()
+
+def plot_mahal_dist(mahal_dist, dates, num_assets, title, cutoff=0.95, ax=None):
+    """
+    Plot the Mahalanobis Distance on a chart
+    mahal_dist - vector of Mahalanobis distances
+    dates - dates used for calculation of distances
+    num_assets - number of assets
+    title - title of chart 
+    cutoff - plot horizontal line at chi-squared cutoff
+    ax - axis if needed
+    """
+    show = False
+    if ax is None:
+        ax = plt.gca()
+        show = True
+    chisq_cutoff = chi2.ppf(cutoff, num_assets)
+    ax.plot(dates, mahal_dist, 'r-')
+    ax.axhline(y=chisq_cutoff, color='gray', linestyle='--')
+    ax.set_ylim([0.0, np.max(mahal_dist)])
+    ax.set_title(title)
 
 
 def plot_function(
