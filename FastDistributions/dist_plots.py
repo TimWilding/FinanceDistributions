@@ -64,11 +64,11 @@ def plot_hist_fit(
     ax.set_title(f"{series_name} Histogram")
     ax.legend()
     if log_scale:
-        ax.yscale("log")
+        ax.set_yscale("log")
         if ylim is None:
-            ax.ylim([0.8 * y_min, 1.2 * y_max])
+            ax.set_ylim([0.8 * y_min, 1.2 * y_max])
         else:
-            ax.ylim(ylim)
+            ax.set_ylim(ylim)
 
     # Show the plot
     if show:

@@ -1,6 +1,7 @@
 """
 Testing module for the FinanceDistributions package
 """
+
 import datetime
 import numpy as np
 import pandas as pd
@@ -43,8 +44,7 @@ def test_bootstrap():
     to a data sample downloaded by Yahoo Finance
     """
     nbs = 100
-    lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225")]
-    df_ret = fd.download_yahoo_returns(lst_indices)
+    df_ret = fd.get_test_data()
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
     df_bs = fd.parallel_bootstrap(sp_ret, norm_fn, nskip=10, nbs=nbs)
     assert len(df_bs.index) == nbs + 1
@@ -133,7 +133,7 @@ def test_correl():
         ("^N225", "Nikkei 225"),
     ]  # , ('VWRA.L', 'Vanguard FTSE All-World')
     # lst_indices = [('^SP500TR', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
-    df_prices = fd.download_yahoo_returns(lst_indices)
+    df_prices = fd.get_test_data()
 
     df_month = (
         df_prices.groupby(["Name", "EndOfMonth"])
@@ -157,7 +157,7 @@ def test_robust_correl():
         ("^N225", "Nikkei 225"),
     ]  # , ('VWRA.L', 'Vanguard FTSE All-World')
     # lst_indices = [('^SP500TR', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
-    df_prices = fd.download_yahoo_returns(lst_indices, download_period="5y")
+    df_prices = fd.get_test_data(5)
     pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
     (samp_ave, samp_covar, nu, _) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
@@ -172,9 +172,15 @@ def test_yf():
     """
     Test the Yahoo Finance Download
     """
-    lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225"), ("BTC-USD", "Bitcoin")]
+    lst_indices = [
+        ("^GSPC", "SP 500"),
+        ("^FTSE", "FTSE 100"),
+        ("^N225", "Nikkei 225"),
+        ("BTC-USD", "Bitcoin"),
+    ]
     df_download = fd.download_yahoo_returns(lst_indices)
-    df_download.to_csv('asset_returns.csv')    
+    df_download.to_csv("asset_returns.csv")
+
 
 def test_dists():
     """
@@ -188,8 +194,8 @@ def test_dists():
     gsd = fd.GeneralisedSkewT(0, 1.0, 0.2, 1, 1000)
     gsd_skew = fd.GeneralisedSkewT(0, 1.0, 0.2, 2.0, 1000)
     print(gsd.pdf(-1.0))
-    lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225"), ('WFBIX', 'US Aggregate Bond Index')]
-    df_ret = fd.download_yahoo_returns(lst_indices)
+    # lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225"), ('WFBIX', 'US Aggregate Bond Index')]
+    df_ret = fd.get_test_data()
 
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
 

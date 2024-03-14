@@ -10,7 +10,11 @@ from FastDistributions.dist_plots import (
     plot_mahal_cdf,
     plot_mahal_dist,
 )
-from FastDistributions.dist_data import download_yahoo_returns, calculate_returns
+from FastDistributions.dist_data import (
+    download_yahoo_returns,
+    calculate_returns,
+    get_test_data,
+)
 from FastDistributions.PRIIPS_calc import (
     PRIIPS_stats,
     PRIIPS_stats_2020,

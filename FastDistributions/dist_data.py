@@ -1,12 +1,14 @@
 """
 Utility functions for downloading data from e.g. yfinance
 """
-
+from dateutil.relativedelta import relativedelta
 from multiprocessing.pool import ThreadPool
 import numpy as np
 import pandas as pd
+from pandas import read_csv
 import yfinance as yf
-
+import os
+import os.path
 
 def _download_single_asset(asset, download_period, start, end):
     """
@@ -109,3 +111,19 @@ def calculate_returns(
     df_out = df_out.dropna()  # get rid of the log returns that are rubbish
     print("Calculated Returns")
     return df_out
+
+
+
+
+def get_test_data(download_years=-1):
+    """
+    Returns a test dataset downloaded from Yahoo earlier
+    """
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../data")
+    df = read_csv(os.path.join(data_path, "asset_returns_history.csv"), parse_dates=[0])
+    if download_years > 0:
+        latest_date = df["Date"].max()
+        start_date = latest_date - relativedelta(years=download_years)
+        df = df[(df["Date"] >= start_date) & (df["Date"] <= latest_date)]
+ 
+    return calculate_returns(df)
