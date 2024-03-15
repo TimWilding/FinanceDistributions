@@ -58,7 +58,7 @@ class CartesianGridInterpolator:
             self.values, coords, order=self.order, cval=np.nan
         )  # fill_value
 
-data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../data")
+data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "interp_data")
 file_stitch(os.path.join(data_path, "ll_levy_stable_interp_tan.pickle"), DESTINATION)
 
 with open(DESTINATION, "rb") as handle:

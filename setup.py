@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 # see for guide on setting up repository
 # https://docs.python-guide.org/writing/structure/
@@ -17,7 +17,7 @@ setup(
     url="https://github.com/TimWilding/FinanceDistributions",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
-    packages=find_packages(),
+    packages=find_namespace_packages(where="FastDistributions"),
     # add any additional packages that need installing
     install_requires=[
         "numpy",
@@ -27,6 +27,8 @@ setup(
         "Py-BOBYQA",
         "seaborn",
     ],
+    package_dir={"": "FastDistributions"},
+    package_data = {"interp_data": ["*"],},
     keywords=["python", "first package"],
     classifiers=[
         "Development Status :: 3 - Alpha",

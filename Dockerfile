@@ -11,17 +11,17 @@ COPY . financedistributions
 WORKDIR financedistributions
 
 
-RUN conda env create -n fastdistribution --file environment.yml \
+RUN conda env create --file environment.yml \
     && conda clean -afy \
     && find /opt/conda/ -follow -type f -name '*.a' -delete \
-    && find /opt/conda/ -follow -type f -name '*.pyc' -delete \
-	&& activate fastdistribution
-RUN conda install jupyter
+    && find /opt/conda/ -follow -type f -name '*.pyc' -delete 
+
 RUN pip install .
+RUN conda install jupyter 
 
 # Run tests as part of the install
 RUN pip install --no-cache-dir pytest && \
-    python -m pytest tests
+   python -m pytest tests
 
 
 EXPOSE 8888
