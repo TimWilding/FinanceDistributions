@@ -19,10 +19,9 @@ RUN conda env create -n fastdistribution --file environment.yml \
 RUN conda install jupyter
 RUN pip install .
 
-ARG TEST
-RUN if [[ -n "${TEST}" ]] ; then \
-    pip install --no-cache-dir pytest && \
-    python -m pytest tests ; fi
+# Run tests as part of the install
+RUN pip install --no-cache-dir pytest && \
+    python -m pytest tests
 
 
 EXPOSE 8888

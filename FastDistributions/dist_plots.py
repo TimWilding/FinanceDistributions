@@ -43,6 +43,7 @@ def plot_hist_fit(
     # Plot the histogram
     show = False
     if ax is None:
+        plt.figure()
         ax = plt.gca()
         show = True
 
@@ -82,6 +83,7 @@ def plot_mahal_cdf(chi_sqrd, num_assets, ax=None):
     """
     show = False
     if ax is None:
+        plt.figure()
         ax = plt.gca()
         show = True
     n = chi_sqrd.shape[0]
@@ -108,6 +110,7 @@ def plot_mahal_dist(mahal_dist, dates, num_assets, title, cutoff=0.95, ax=None):
     """
     show = False
     if ax is None:
+        plt.figure()
         ax = plt.gca()
         show = True
     chisq_cutoff = chi2.ppf(cutoff, num_assets)

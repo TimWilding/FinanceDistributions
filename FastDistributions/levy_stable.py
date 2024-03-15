@@ -9,6 +9,8 @@ import numpy as np
 import pybobyqa
 from scipy.stats import levy_stable, FitError
 from scipy.ndimage import map_coordinates
+import os
+from .splich import file_stitch
 
 MAX_AT_VAL = 0.99
 LOC_VAR = 0
@@ -56,11 +58,8 @@ class CartesianGridInterpolator:
             self.values, coords, order=self.order, cval=np.nan
         )  # fill_value
 
-
-opener = urllib.request.build_opener()
-opener.addheaders = [("User-agent", "Wget/1.16 (linux-gnu)")]
-urllib.request.install_opener(opener)
-urllib.request.urlretrieve(INTERP_FILE_ID, DESTINATION)
+data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../data")
+file_stitch(os.path.join(data_path, "ll_levy_stable_interp_tan.pickle"), DESTINATION)
 
 with open(DESTINATION, "rb") as handle:
     GRID_INT = pickle.load(handle)

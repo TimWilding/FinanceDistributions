@@ -18,6 +18,7 @@ import time
 import numpy as np
 from scipy.stats import levy_stable
 from scipy.interpolate import RegularGridInterpolator
+from .splich import file_split
 
 
 from joblib import Parallel, delayed
@@ -81,6 +82,9 @@ interp = RegularGridInterpolator(
 # interp = RegularGridInterpolator((alpha_vals, beta_vals, x_vals), pdf_vals)
 with open("ll_levy_stable_interp.pickle", "wb") as handle:
     pickle.dump(interp, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# Split the file into 5 so we can handle it
+file_split("ll_levy_stable_interp.pickle", 5)
 
 # We should also run some statistics on the rate of change in the function values
 # across the grid

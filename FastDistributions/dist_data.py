@@ -14,17 +14,20 @@ def _download_single_asset(asset, download_period, start, end):
     """
     download a single asset using the yfinance api and append
     a ticker and name column
+    https://github.com/ranaroussi/yfinance/blob/main/README.md
+    contains suggestions which might help robustness
     """
     ticker = asset[0]
+ 
     if ticker is None:
         return None
     if start is None:
-        df_history = yf.Ticker(ticker).history(period=download_period)
+        df_history =  yf.download([ticker], threads=False, period=download_period)
     else:
         if end is None:
-            df_history = yf.Ticker(ticker).history(start=start)
+            df_history = yf.download([ticker], threads=False, start=start)
         else:
-            df_history = yf.Ticker(ticker).history(start=start, end=end)
+            df_history =  yf.download([ticker], threads=False, start=start, end=end)
     df_history["Ticker"] = ticker
     df_history["Name"] = asset[1]
     df_history = df_history.reset_index()
