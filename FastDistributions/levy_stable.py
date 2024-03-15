@@ -1,16 +1,14 @@
 """
 Fast fitting of Levy-Stable distributions using interpolation of prebuilt functions
 """
-
+import os
 import math
 import pickle
-import urllib.request
 import numpy as np
 import pybobyqa
 from scipy.stats import levy_stable, FitError
 from scipy.ndimage import map_coordinates
-import os
-from .splich import file_stitch
+from .splich import file_stitch_buffer
 
 MAX_AT_VAL = 0.99
 LOC_VAR = 0
@@ -57,20 +55,20 @@ class CartesianGridInterpolator:
         return map_coordinates(
             self.values, coords, order=self.order, cval=np.nan
         )  # fill_value
+    
+
 
 data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "interp_data")
-file_stitch(os.path.join(data_path, "ll_levy_stable_interp_tan.pickle"), DESTINATION)
+buf = file_stitch_buffer(os.path.join(data_path, "ll_levy_stable_interp_tan.pickle"))
 
-with open(DESTINATION, "rb") as handle:
-    GRID_INT = pickle.load(handle)
-    min_pdf_val = np.min(GRID_INT.values[np.isfinite(GRID_INT.values)])
-    GRID_INT.values[~np.isfinite(GRID_INT.values)] = min_pdf_val - 100
-    GRID_INT.bounds_error = False
+GRID_INT = pickle.loads(buf.getvalue())
+min_pdf_val = np.min(GRID_INT.values[np.isfinite(GRID_INT.values)])
+GRID_INT.values[~np.isfinite(GRID_INT.values)] = min_pdf_val - 100
+GRID_INT.bounds_error = False
 
 # Convert the regular grid interpolator to a
 # Cartesian Grid Interpolator because it is much faster
 GRID_INT = CartesianGridInterpolator(GRID_INT.grid, GRID_INT.values, method="cubic")
-
 
 class LevyStableInterp:
     """

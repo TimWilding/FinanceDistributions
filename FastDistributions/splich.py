@@ -28,7 +28,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from io import BytesIO
 import os
 import glob
 import hashlib
@@ -134,23 +134,16 @@ def file_stitch(file, outfile=None, hashfile=None):
     #            outfile = os.path.join(fdir, outfile)
 
     vvprint(f"Output: {outfile or file}")
-
+    
+    buffer = BytesIO()
     with open(outfile or file, "wb") as fh:
         for filename in file_parts:
-            buffer = b""
             vvprint(f"Reading {filename}")
             with open(filename, "rb") as prt_fh:
-                buffer = prt_fh.read()
-                fh.write(buffer)
+                buffer.write(prt_fh.read())
 
     vvprint(f"Written {os.path.getsize(outfile or file)} bytes")
-
-    if hashfile:
-        print("Verifying hash")
-        if checkhash(outfile or file, hashfile):
-            print("Hash verified")
-        else:
-            print("Hash verification failed")
+    return buffer
 
 
 def gethash(file):
@@ -204,3 +197,37 @@ def sort_file_parts(file_part_list):
     fparts.sort(key=lambda x: x[0])
     fparts = [prt[1] for prt in fparts]
     return fparts
+
+def file_stitch_buffer(file):
+    """
+    Stitches the parts together and return BytesIO object
+    """
+    # d:\\somedir\\somefile.txt to
+    # d:\\somedir and somefile.txt
+
+    if not file:
+        return False
+
+    fdir, fname = os.path.split(file)
+    # fname = fname.split('.')[0]
+    fname = os.path.splitext(fname)[0]
+
+    file_parts = glob.glob(os.path.join(fdir, f"{fname}_*.prt"))
+    file_parts = sort_file_parts(file_parts)
+
+    if not file_parts:
+        raise FileNotFoundError("Split files not found")
+
+    #    if outfile:
+    #        # if just the filename
+    #        if os.path.split(outfile)[0] == '':
+    #            # create the file in input dir (fdir)
+    #            outfile = os.path.join(fdir, outfile)
+
+    buffer = BytesIO()
+    for filename in file_parts:
+        with open(filename, "rb") as prt_fh:
+            buffer.write(prt_fh.read())
+
+    print("Read in byte array")
+    return buffer
