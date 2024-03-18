@@ -3,3 +3,4 @@
 /.pytest_cache
 /FastDistributions/__pycache__
 /FastDistributions/.vscode
+/docs/build
