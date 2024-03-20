@@ -12,10 +12,12 @@ The Generalised Skew T has an analytical form for the probability density functi
 Levy Stable distribution. 
 
 .. math::
-    f(x \lvert k, n, \lambda, \sigma^2) = 
+    f(x \lvert k, n, \lambda, \mu, \sigma) = 
    C(1+ (\frac{k}{n-2})\theta^{-k} (1-\lambda)^{-k} \lvert \frac{x-\mu}{\sigma} \rvert^k )^{\frac{-(n+1)}{k}}
 
-where :math:'\mu' are distribution family parameters
+
+
+where :math:`\mu, \sigma` are location and scale parameters, and :math:`\lambda, k` and  :math:`n` are distribution family parameters
 
 Unlike the Levy-Stable distribution, the GST does not have the stability property. 
 Hence, adding together variables from this family of distributions should ensure that the Classical Central
@@ -24,11 +26,13 @@ Limit Theorem is obeyed provided the parameters suggest a finite variance.
 Distribution Examples
 ---------------------
 
-Here's an example of the different Laplace distributions that can be modeled with the Skewed Generalised T distribution:
+Here's an example of the different Laplace distributions that can be modeled with the Skewed Generalised T distribution.
+The chart shows the effect of changing the skewness parameter (:math:`\lambda`), when  :math:`k = 1.0` and  :math:`n` is a very large number:
 
 .. image:: img/Laplace_changing_Skewness.png
 
-And here's some of the different T-distributions that can be modeled with the family:
+And here's some of the different T-distributions that can be modeled with the family. This time
+:math:`\lambda = 0.0`, :math:`k = 2.0`, and we vary :math:`n` :
 
 .. image:: img/TDist_changing_DoF.png
 
@@ -38,6 +42,8 @@ Fitting a Skewed Generalised T Distribution
 -------------------------------------------
 
 A Skewed Generalised T distribution can be fit to a numpy array of data using::
+
+    import FastDistributions as fd
     # fit distribution parameters to sample data
     dist = fd.GeneralisedSkewT.fit(data_sample)
     # parameters returned are lambda, k, n, location, and scale
