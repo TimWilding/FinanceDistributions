@@ -1,6 +1,7 @@
 """
 Utility functions for downloading data from e.g. yfinance
 """
+
 from dateutil.relativedelta import relativedelta
 from multiprocessing.pool import ThreadPool
 import numpy as np
@@ -10,6 +11,7 @@ import yfinance as yf
 import os
 import os.path
 
+
 def _download_single_asset(asset, download_period, start, end):
     """
     download a single asset using the yfinance api and append
@@ -18,16 +20,16 @@ def _download_single_asset(asset, download_period, start, end):
     contains suggestions which might help robustness
     """
     ticker = asset[0]
- 
+
     if ticker is None:
         return None
     if start is None:
-        df_history =  yf.download([ticker], threads=False, period=download_period)
+        df_history = yf.download([ticker], threads=False, period=download_period)
     else:
         if end is None:
             df_history = yf.download([ticker], threads=False, start=start)
         else:
-            df_history =  yf.download([ticker], threads=False, start=start, end=end)
+            df_history = yf.download([ticker], threads=False, start=start, end=end)
     df_history["Ticker"] = ticker
     df_history["Name"] = asset[1]
     df_history = df_history.reset_index()
@@ -128,5 +130,5 @@ def get_test_data(download_years=-1):
         latest_date = df["Date"].max()
         start_date = latest_date - relativedelta(years=download_years)
         df = df[(df["Date"] >= start_date) & (df["Date"] <= latest_date)]
- 
+
     return calculate_returns(df)

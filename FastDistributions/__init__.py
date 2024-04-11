@@ -9,6 +9,7 @@ from FastDistributions.dist_plots import (
     plot_log_cdf,
     plot_mahal_cdf,
     plot_mahal_dist,
+    plot_reg_errors,
 )
 from FastDistributions.dist_data import (
     download_yahoo_returns,
@@ -33,4 +34,7 @@ from FastDistributions.stat_functions import (
     parallel_bootstrap,
     rolling_backtest,
     rolling_backtest_date_function,
+)
+from FastDistributions.regress_calcs import (
+    sample_regress
 )

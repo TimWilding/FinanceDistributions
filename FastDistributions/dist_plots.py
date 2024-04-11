@@ -76,6 +76,81 @@ def plot_hist_fit(
         plt.show()
 
 
+def plot_reg_errors(
+    coefficients1,
+    errors1,
+    coefficients2,
+    errors2,
+    cols,
+    title="Regression Coefficients with Standard Errors",
+    watermark=None,
+):
+    """
+    Plot a comparison of regression coefficients from two models using the data in coefficients1 and coefficients2
+    """
+    (fig, ax) = plt.subplots(figsize=(10, 5))
+    # Define the data
+
+    # Set the number of variables
+    num_vars = len(coefficients1)
+
+    # Define the positions for the bar chart
+    bar_width = 0.35
+
+    # Define the positions for the bar chart
+    positions1 = np.arange(num_vars)
+    positions2 = [pos + bar_width for pos in positions1]
+    # Create the bar chart
+    bars1 = ax.bar(
+        positions1,
+        coefficients1,
+        yerr=errors1,
+        capsize=3,
+        width=bar_width,
+        label="Daily",
+        color="b",
+        alpha=0.6,
+        ecolor="b",
+        snap=False,
+    )
+    bars2 = ax.bar(
+        positions2,
+        coefficients2,
+        yerr=errors2,
+        capsize=3,
+        width=bar_width,
+        label="Weekly",
+        color="r",
+        alpha=0.6,
+        ecolor="r",
+        snap=False,
+    )
+
+    # Add labels and title
+    # plt.xlabel('Features')
+    ax.set_ylabel("Coefficients")
+    ax.set_title(title)
+    if watermark is not None:
+        watermark_img = plt.imread(watermark)  # Load your image filedollarimage.jpg
+        xdata = ax.get_lines()[0].get_xdata()
+        ydata = ax.get_lines()[0].get_ydata()
+        ax.imshow(
+            watermark_img,
+            extent=[xdata[0] - 0.5, xdata[-1] + 0.5, ydata[0], ydata[-1]],
+            aspect="auto",
+            alpha=0.3,
+            zorder=0,
+        )
+    ax.set_xticks(
+        positions1 + bar_width / 2, cols, rotation=270
+    )  # Update with your variable names
+    ax.legend()
+
+    # Show plot
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_mahal_cdf(chi_sqrd, num_assets, ax=None):
     """
     Plot empirical percent rank of mahalanobis distance vs
@@ -98,13 +173,14 @@ def plot_mahal_cdf(chi_sqrd, num_assets, ax=None):
     if show:
         plt.show()
 
+
 def plot_mahal_dist(mahal_dist, dates, num_assets, title, cutoff=0.95, ax=None):
     """
     Plot the Mahalanobis Distance on a chart
     mahal_dist - vector of Mahalanobis distances
     dates - dates used for calculation of distances
     num_assets - number of assets
-    title - title of chart 
+    title - title of chart
     cutoff - plot horizontal line at chi-squared cutoff
     ax - axis if needed
     """
@@ -114,8 +190,8 @@ def plot_mahal_dist(mahal_dist, dates, num_assets, title, cutoff=0.95, ax=None):
         ax = plt.gca()
         show = True
     chisq_cutoff = chi2.ppf(cutoff, num_assets)
-    ax.plot(dates, mahal_dist, 'r-')
-    ax.axhline(y=chisq_cutoff, color='gray', linestyle='--')
+    ax.plot(dates, mahal_dist, "r-")
+    ax.axhline(y=chisq_cutoff, color="gray", linestyle="--")
     ax.set_ylim([0.0, np.max(mahal_dist)])
     ax.set_title(title)
 

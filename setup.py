@@ -9,7 +9,7 @@ LONG_DESCRIPTION = "A couple of distributions with skewness\
 
 # Setting up
 setup(
-    # the name must match the folder name 'verysimplemodule'
+    # the name must match the folder name 'FastDistributions'
     name="FastDistributions",
     version=0.9,
     author="Tim Wilding",
@@ -24,12 +24,14 @@ setup(
         "matplotlib",
         "yfinance",
         "scipy",
+        "scikit-learn",
         "Py-BOBYQA",
         "seaborn",
+        "statsmodels",
     ],
     package_dir={"": "FastDistributions"},
     package_data = {"interp_data": ["*"],},
-    keywords=["python", "first package"],
+    keywords=["python", "finance", "distributions", "utilities"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Researchers",

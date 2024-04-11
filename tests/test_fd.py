@@ -12,15 +12,15 @@ import seaborn as sns
 from .context import FastDistributions as fd
 
 
-def plot_stats_col(df, col_name, axis_label, chart_title):
+def plot_stats_col(df, col_name, axis_label, chart_title, id_field="Identifier"):
     """
     Plot each of the indices on chart from the statistics daata set
     """
-    df_sort = df.sort_values(["Identifier", "Date"])
+    df_sort = df.sort_values([id_field, "Date"])
 
     # Plot the time series for each asset using Seaborn
     _, _ = plt.subplots(figsize=(6, 4))
-    sns.lineplot(data=df_sort, x="Date", y=col_name, hue="Identifier")
+    sns.lineplot(data=df_sort, x="Date", y=col_name, hue=id_field)
     plt.ylabel(axis_label)
     plt.title(chart_title)
 
@@ -73,11 +73,14 @@ def test_priips():
 
     df_backtest_old = fd.rolling_backtest(
         df_price_history,
-        lambda x: fd.PRIIPS_stats_df(x, use_new=False, holding_period=5),
+        lambda x: fd.PRIIPS_stats_df(
+            x, use_new=False, holding_period=5
+        ),
         rolling_window_years=5,
         rolling_start_years=15,
     )
 
+    df_backtest_old.to_csv("BS_Priips.csv")
     plot_stats_col(df_backtest_old, "Favourable", "Performance", "Favourable (Orig)")
     df_sample_5y = df_price_history[
         (df_price_history.Date > datetime.datetime(2018, 10, 27))
@@ -146,7 +149,21 @@ def test_correl():
         df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS
     )
 
+def test_new_priips_aex():
+    df_prices = fd.get_test_data()
+    df_prices = df_prices[df_prices.Ticker=='^AEX']
+    df_backtest = fd.rolling_backtest(
+        df_prices,
+        lambda x: fd.PRIIPS_stats_df(
+            x, use_new=True, holding_period=5, index_field="Ticker"
+        ),
+        rolling_window_years=10,
+        rolling_start_years=20,
+    )
+    df_backtest.to_csv('AEX_backtest.csv')
+    plot_stats_col(df_backtest, "Moderate", "Performance", "Moderate (Orig)")
 
+   
 def test_robust_correl():
     """
     Test robust correlation
@@ -225,6 +242,14 @@ def test_dists():
     fd.plot_qq(sp_ret, "SP500 Returns", dict_ppf, nbins=500)
 
     print("Finished testing")
+
+
+def test_regress():
+    df_prices = fd.get_test_data(5)
+    pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
+    pivot_df = pivot_df.dropna()
+    df = fd.sample_regress(pivot_df, "SP 500", True, True)
+    print("Finished testing regression")
 
 
 if __name__ == "__main__":
