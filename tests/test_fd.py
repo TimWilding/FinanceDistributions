@@ -58,35 +58,35 @@ def test_priips():
     MIN_DATE_FILTER = datetime.datetime(
         2004, 1, 1
     )  # beginning of sample 'Jan 2004' - Jan 7 results in similar
-    df_price_history = fd.calculate_returns(
-        read_csv(
-            "https://raw.githubusercontent.com/TimWilding/FinanceDataSet/main/PRIIPS_Data_Set.csv",
-            parse_dates=[1],
-        ),
-        "Index",
-        "Date",
-    )
+    df_price_history = fd.get_test_data()
 
     df_price_history = df_price_history[
         df_price_history.Date >= MIN_DATE_FILTER
     ]  # Note - this removes NaNs from initial price points in LogReturn column
+    # Remove Bitcoin because it doesn't have enough history
+    df_price_history = df_price_history[
+        df_price_history["Ticker"].isin(["^AEX", "^FTSE", "^N225", "^GSPC"])
+    ]
+    
+    df_sample_5y = df_price_history[
+        (df_price_history.Date > datetime.datetime(2018, 10, 27))
+        & (df_price_history.Date < datetime.datetime(2023, 10, 27))
+    ]
+    df_s = fd.PRIIPS_stats_df(df_sample_5y, index_field="Ticker")
 
     df_backtest_old = fd.rolling_backtest(
         df_price_history,
         lambda x: fd.PRIIPS_stats_df(
-            x, use_new=False, holding_period=5
+            x, use_new=False, holding_period=5, index_field="Ticker"
         ),
         rolling_window_years=5,
         rolling_start_years=15,
     )
 
-    df_backtest_old.to_csv("BS_Priips.csv")
+    df_backtest_old.to_csv("PRIIPS_Backtest.csv")
     plot_stats_col(df_backtest_old, "Favourable", "Performance", "Favourable (Orig)")
-    df_sample_5y = df_price_history[
-        (df_price_history.Date > datetime.datetime(2018, 10, 27))
-        & (df_price_history.Date <= datetime.datetime(2023, 10, 27))
-    ]
-    df_bs = fd.PRIIPS_stats_bootstrap(df_sample_5y)
+
+    df_bs = fd.PRIIPS_stats_bootstrap(df_sample_5y, index_field="Ticker")
     print("Finished")
     return
 
@@ -149,21 +149,22 @@ def test_correl():
         df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS
     )
 
+
 def test_new_priips_aex():
     df_prices = fd.get_test_data()
-    df_prices = df_prices[df_prices.Ticker=='^AEX']
+    df_prices = df_prices[df_prices.Ticker == "^AEX"]
     df_backtest = fd.rolling_backtest(
         df_prices,
         lambda x: fd.PRIIPS_stats_df(
             x, use_new=True, holding_period=5, index_field="Ticker"
         ),
         rolling_window_years=10,
-        rolling_start_years=20,
+        rolling_start_years=15,
     )
-    df_backtest.to_csv('AEX_backtest.csv')
+    df_backtest.to_csv("AEX_backtest.csv")
     plot_stats_col(df_backtest, "Moderate", "Performance", "Moderate (Orig)")
 
-   
+
 def test_robust_correl():
     """
     Test robust correlation

@@ -19,3 +19,12 @@ consultation.
 
 
 
+Given the problems with the initial PRIIPS calculation, there has now been a divergence between the FCA performance scenarios and 
+the EU performance scenarios. The FCA suggests the inclusion of narrative outcomes, while the EU has calculations that should be made. 
+The FCA's choice of narrative-based outcomes has now totally lost the point of the PRIIPS performance scenarios - these scenarios 
+were supposed to give retail investors a common set of outcomes for comparison between products. Unfortunately, this is no longer the case.
+#https://www.simmons-simmons.com/en/publications/cl1au53oy07cf0a92uud6iaxj/the-uk-priips-regime-final-rules-from-1-january-2023
+see
+https://www.fca.org.uk/publication/policy/ps22-2.pdf - FCA's review of the PRIIPS performance scenarios.
+
+https://www.deloitte.com/lu/en/Industries/investment-management/blogs/priips-rts-calculation-methodology-for-performance-scenarios.html - nice description of the new calculation

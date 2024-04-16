@@ -4,6 +4,7 @@ PRIIPS calculation functions for category 2 PRIIPS.
 
 import pandas as pd
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from scipy.stats import norm
 
 #  see https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html
@@ -82,6 +83,73 @@ def volatility_to_MRM_class(VaR_equivalent_vol: float) -> int:
     return 7
 
 
+def get_stress_window(
+    periods_in_year: int, holding_period: float, returns, use_2020: bool = True
+):
+    """
+    Return the size of the window used to calculate the stress volatility.
+    This is a function of both data frequency and holding period. The size of the
+    window is smaller if the holding period is less than a year. The PRIIPS guidelines
+    state that you require certain amounts of data depending on the data frequency
+    so this function will raise an Exception if there is insufficient data
+    see p.74 of https://www.eiopa.europa.eu/document/download/51861f2c-84a1-4c51-a891-3cd5c47db80c_en?filename=Final%20report%20on%20draft%20RTS%20to%20amend%20PRIIPs%20KID.pdf
+
+    Note that there are suggestions tha the calculations have changed in the 2020 recommendations
+    this is to prevent the unfavourable scenario being below the stress scenario
+    """
+    n = returns.shape[0]
+    if use_2020:
+        print(
+            "Code not adjusted for new recommended stress windows - proceed with caution"
+        )
+    if periods_in_year == 12:
+        if n < 60:
+            raise Exception(
+                "Insufficient data for PRIIPS calculation - 5 years monthly required"
+            )
+        if holding_period < 1.0:
+            return 6
+        else:
+            return 12
+    if periods_in_year == 52:
+        if n < 208:
+            raise Exception(
+                "Insufficient data for PRIIPS calculation - 4 years weekly required"
+            )
+        if holding_period < 1.0:
+            return 8
+        else:
+            return 16
+    # otherwise, assume daily data
+    if n < 2 * periods_in_year:
+        raise Exception(
+            "Insufficient data for PRIIPS calculation - 2 years daily required"
+        )
+    if holding_period < 1.0:
+        return 21
+
+    return 63
+
+
+def calc_sigma_stress(
+    returns, periods_in_year: int, holding_period: float, use_2020: bool
+):
+    """
+    Return the 90th percentile of the rolling volatility
+    for use in the stress scenario calculation
+    """
+    rolling_window = get_stress_window(
+        periods_in_year, holding_period, returns, use_2020
+    )
+    rolling_vols = np.std(
+        sliding_window_view(returns, window_shape=rolling_window, axis=0), axis=2
+    )
+    if (holding_period > 1) & use_2020:
+        return np.percentile(rolling_vols, 95, axis=0)
+    else:
+        return np.percentile(rolling_vols, 90, axis=0)
+
+
 def calc_moments(returns):
     """
     calc_moments calculates the first 4 moments of an array
@@ -136,8 +204,13 @@ def PRIIPS_stats(returns, holding_period=5, periods_in_year=256):
     This function does not currently calculate the stressed outcomes. Those
     require a rolling volatility
     """
-
+    if returns.shape[0] < 1:
+        raise Exception("Insufficient data for calculation of PRIIPS statistics")
     mu, sigma, skew, kurt = calc_moments(returns)
+
+    sigma_stress, stress_val = get_stress_outcome(
+        returns, holding_period, periods_in_year, False, skew, kurt
+    )
 
     def local_cf_pctile(x, y, z):
         return Cornish_Fisher_percentile(
@@ -154,7 +227,27 @@ def PRIIPS_stats(returns, holding_period=5, periods_in_year=256):
         np.exp(local_cf_pctile(mu, sigma, 0.9)),
         vol,
         np.vectorize(volatility_to_MRM_class)(vol),
+        sigma_stress,
+        np.exp(stress_val),
     )
+
+
+def get_stress_outcome(
+    returns,
+    holding_period: int,
+    periods_in_year: int,
+    use_2020: bool,
+    skew: float,
+    kurt: float,
+):
+    sigma_stress = calc_sigma_stress(returns, periods_in_year, holding_period, use_2020)
+    stress_pctile = 0.05
+    if holding_period < 1.0:
+        stress_pctile = 0.01
+    stress_val = Cornish_Fisher_percentile(
+        0.0, sigma_stress, skew, kurt, holding_period, stress_pctile, periods_in_year
+    )
+    return sigma_stress, stress_val
 
 
 def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
@@ -168,9 +261,16 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
      - Favourable Scenario Outcome - best performance over holding period
      - VaR equivalent volatility
      - Market Risk Class
+
+     Note that the stress performance percentile has changed
     """
+    if returns.shape[0] < 1:
+        raise Exception("Insufficient data for calculation of PRIIPS statistics")
 
     mu, sigma, skew, kurt = calc_moments(returns)
+    sigma_stress, stress_val = get_stress_outcome(
+        returns, holding_period, periods_in_year, True, skew, kurt
+    )
 
     def local_cf_pctile(x, y, z):
         return Cornish_Fisher_percentile(
@@ -186,6 +286,8 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
     # Define the rolling window size (5 years in this case, assuming 252 trading days per year)
     # This assumption is actually pretty dubious because there are actually fewer trading days
     # in a year
+    # here is a good description of the new
+    # https://www.deloitte.com/lu/en/Industries/investment-management/blogs/priips-rts-calculation-methodology-for-performance-scenarios.html
     window_size = holding_period * periods_in_year
 
     rolling_sum = returns_df.rolling(window=window_size).sum()
@@ -201,6 +303,8 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
         best_performance,
         vol,
         np.vectorize(volatility_to_MRM_class)(vol),
+        sigma_stress,
+        np.exp(stress_val),
     )
 
 
@@ -228,7 +332,10 @@ def PRIIPS_stats_array(
         "Favourable": np.squeeze(s[2]),
         "VaREquivalentVolatility": np.squeeze(s[3]),
         "SummaryRiskIndicator": np.squeeze(s[4]),
+        "StressVolatility": np.squeeze(s[5]),
+        "StressOutcome": np.squeeze(s[6]),
     }
+
     if sample_name is not None:
         dict_results["Sample"] = [sample_name] * Z.shape[1]
 
@@ -241,11 +348,17 @@ def PRIIPS_stats_df(
     periods_in_year=256,
     sample_name=None,
     use_new: bool = False,
+    calc_stress: bool = False,
+    index_field="Index",
+    date_field="Date",
+    return_field="LogReturn",
 ) -> pd.DataFrame:
     """
     Returns the PRIIPS stats in an easy-to-use dataframe
     """
-    pivoted_df = sample_df.pivot(index="Date", columns="Index", values="LogReturn")
+    pivoted_df = sample_df.pivot(
+        index=date_field, columns=index_field, values=return_field
+    )
     Y = pivoted_df.values
     mask = np.logical_not(np.any(np.isnan(Y), axis=1))
     Z = Y[mask, :]  # only use columns of Y that don't contain any NaNs
@@ -261,13 +374,18 @@ def PRIIPS_stats_bootstrap(
     periods_in_year=256,
     nbs=1000,
     use_new=False,
+    index_field="Index",
+    date_field="Date",
+    return_field="LogReturn",
 ) -> pd.DataFrame:
     """
     Performs a bootstrap and
     returns the PRIIPS stats in an easy-to-use dataframe
     SHOULD I GET RID OF THIS
     """
-    pivoted_df = sample_df.pivot(index="Date", columns="Index", values="LogReturn")
+    pivoted_df = sample_df.pivot(
+        index=date_field, columns=index_field, values=return_field
+    )
     Y = pivoted_df.values
     mask = np.logical_not(np.any(np.isnan(Y), axis=1))
     Z = Y[mask, :]  # only use columns of Y that don't contain any NaNs
