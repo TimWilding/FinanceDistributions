@@ -241,7 +241,15 @@ def get_stress_outcome(
     kurt: float,
 ):
     sigma_stress = calc_sigma_stress(returns, periods_in_year, holding_period, use_2020)
-    stress_pctile = 0.05
+    # Stress scenario percentile under the old regulations
+    # Annex IV Article 10 Sub D prior to January 1st 2023
+    # see, e.g. https://www.handbook.fca.org.uk/techstandards/PRIIPs/2017/reg_del_2017_653_oj/annex04.html?date=2021-01-01
+    stress_pctile = 0.1
+    if use_2020:
+        # Stress scenario percentile under the new regulations
+        # Annex IV Article 18 Sub D as of January 1st 2023
+        # see, e.g.
+        stress_pctile = 0.05
     if holding_period < 1.0:
         stress_pctile = 0.01
     stress_val = Cornish_Fisher_percentile(
@@ -288,7 +296,27 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
     # in a year
     # here is a good description of the new
     # https://www.deloitte.com/lu/en/Industries/investment-management/blogs/priips-rts-calculation-methodology-for-performance-scenarios.html
+    # here are the actual rules https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:02021R2268-20220714&from=EN 
+    # Q&A at https://www.esma.europa.eu/sites/default/files/library/jc_2017_49_jc_priips_qa.pdf
     window_size = holding_period * periods_in_year
+
+    # within the time period specified in point 6 of this annex, identification 
+    # of all overlapping sub intervals individually equal in length to the duration 
+    # of the recommended holding period, and which start or end in each of the months, or
+    # at each of the valuation dates fro PRIIPS with a monthly valuation frequency, which
+    # are contained within that period.
+    # So, this seems terribly ambiguous - we can take the rolling 5 year periods (after all,
+    # they start or end in each of the monehts)
+    # Alternatively, we can move forward on a monthly basis and only take the month end
+    # So, I'm left with a question - do the periods include a rolling daily 5 year period
+    # or do we only sample that rolling daily period on a monthly basis
+    # let's suppose we have a 10 year sample starting 1st Jan 2013
+    # do we take 
+    # 1st Jan 2013 - 1st Jan 2018, 2nd Jan 2013 - 2nd Jan 2018, 3rd Jan 2013 - 3rd Jan 2018,... (sampled daily)
+    # or
+    # 1st Jan 2013 - 1st Jan 2018, 1st Feb 2013 - 1st Feb 2018,  1st March 2013 - 1st March 2018,... (sampled monthly)
+    # https://www.esma.europa.eu/sites/default/files/library/jc_2017_49_jc_priips_qa.pdf p34 clarifies that this 
+    # is meant to be monthly  
 
     rolling_sum = returns_df.rolling(window=window_size).sum()
 

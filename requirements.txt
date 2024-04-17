@@ -89,6 +89,7 @@ pytz
 qt-main 
 requests 
 scipy 
+scikit-learn
 seaborn 
 seaborn-base 
 setuptools 

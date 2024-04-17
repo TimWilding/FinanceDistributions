@@ -8,4 +8,6 @@ dependencies:
   - seaborn
   - yfinance
   - joblib
+  - scikit-learn
+  - statsmodels
 prefix: C:\Users\Tim\AppData\Local\anaconda3\envs\fastdistributions
