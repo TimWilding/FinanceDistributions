@@ -10,6 +10,7 @@ from FastDistributions.dist_plots import (
     plot_mahal_cdf,
     plot_mahal_dist,
     plot_reg_errors,
+    plot_multi_function,
 )
 from FastDistributions.dist_data import (
     download_yahoo_returns,
