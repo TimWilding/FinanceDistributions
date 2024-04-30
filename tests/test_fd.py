@@ -253,5 +253,17 @@ def test_regress():
     print("Finished testing regression")
 
 
+def test_risk_parity():
+    """This is a test on a known problem"""
+    sigma = np.vstack([np.array((1.0000, 0.0015, -0.0119)),
+                   np.array((0.0015, 1.0000, -0.0308)),
+                   np.array((-0.0119, -0.0308, 1.0000))])
+    risk_budget = np.array((0.1594, 0.0126, 0.8280))
+    ans = np.array([0.2798628, 0.08774909, 0.63238811])
+    rpp = fd.get_risk_parity_pf(sigma,
+                                risk_budgets=risk_budget)
+    np.testing.assert_allclose(rpp, ans, rtol=1e-5)
+    # assert rpp.risk_concentration.evaluate() < 1e-9
+
 if __name__ == "__main__":
     test_dists()

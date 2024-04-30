@@ -28,6 +28,7 @@ setup(
         "Py-BOBYQA",
         "seaborn",
         "statsmodels",
+        "cvxpy"
     ],
     package_dir={"": "FastDistributions"},
     package_data = {"interp_data": ["*"],},

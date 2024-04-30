@@ -10,4 +10,5 @@ dependencies:
   - joblib
   - scikit-learn
   - statsmodels
+  - cvxpy
 prefix: C:\Users\Tim\AppData\Local\anaconda3\envs\fastdistributions

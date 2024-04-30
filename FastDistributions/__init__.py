@@ -36,6 +36,12 @@ from FastDistributions.stat_functions import (
     rolling_backtest,
     rolling_backtest_date_function,
 )
-from FastDistributions.regress_calcs import (
-    sample_regress
+from FastDistributions.regress_calcs import sample_regress
+from FastDistributions.allocation_recipes import (
+    get_mv_pf,
+    get_weighted_stats,
+    get_optimal_sharpe_pf,
+    get_robust_pf,
+    get_risk_parity_pf,
+    get_pf_stats,
 )
