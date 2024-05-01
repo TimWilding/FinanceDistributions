@@ -4,6 +4,7 @@ Contains Mean-Variance Optimisation and other variants of portfolio optimisation
 
 import cvxpy as cp
 import numpy as np
+import pandas as pd
 
 
 def get_weighted_stats(sample_weights, sample_returns, annualise=52):
@@ -53,7 +54,9 @@ def get_optimal_sharpe_pf(expected_returns, covariances):
     return x.value / kappa.value
 
 
-def get_robust_pf(risk_tol, kappa, expected_returns, covariances, report_progress=False):
+def get_robust_pf(
+    risk_tol, kappa, expected_returns, covariances, report_progress=False
+):
     """
     This is a robust asset allocation mechanism that uses
     sum(mu*w^(1/kappa)) - risk_tol*w'*sigma*w to
@@ -70,7 +73,7 @@ def get_robust_pf(risk_tol, kappa, expected_returns, covariances, report_progres
     """
     if kappa < 1.0:
         raise ValueError("kappa must be >=1.0")
-    
+
     mu = expected_returns
     sigma = covariances
 
