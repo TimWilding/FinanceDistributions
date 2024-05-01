@@ -147,7 +147,7 @@ def get_risk_parity_pf(covariances, risk_budgets=None, report_progress=False):
     budget_constraints = np.ones(num_assets) / num_assets
     if risk_budgets is not None:
         if risk_budgets.shape[0] != num_assets:
-            raise Error("wrong shape risk budgets")
+            raise ValueError("wrong shape risk budgets")
         budget_constraints = risk_budgets
 
     # kappa is an arbitrary constant - it ends up being effectively ignored
