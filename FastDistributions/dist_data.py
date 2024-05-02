@@ -2,14 +2,15 @@
 Utility functions for downloading data from e.g. yfinance
 """
 
-from dateutil.relativedelta import relativedelta
-from multiprocessing.pool import ThreadPool
-import numpy as np
-import pandas as pd
-from pandas import read_csv
-import yfinance as yf
 import os
 import os.path
+from multiprocessing.pool import ThreadPool
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
+from dateutil.relativedelta import relativedelta
+from pandas import read_csv
 
 
 def _download_single_asset(asset, download_period, start, end):

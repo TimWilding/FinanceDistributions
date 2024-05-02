@@ -37,6 +37,7 @@ def parallel_bootstrap(
     nskip: int = 100,
     axis=0,
     display_progress=True,
+    sample_size = None,
 ) -> pd.DataFrame:
     """
     Quick and dirty code to bootstrap a function that returns a
@@ -50,11 +51,14 @@ def parallel_bootstrap(
     - threads = number of threads to use
     - nskip = report every time nskip threads complete
     - axis = axis to use for random slicing if multi-dimensional array
+    - sample_size = number of samples to use in the boostrap sub-sample
     """
     start = time.time()
     lst_bs = []
     lst_results = []
     n = ret_data.shape[axis]
+    if sample_size is not None:
+        n = sample_size
     if include_sample:
         dict_opt = fn(ret_data)
         dict_opt["trial"] = "Sample Optimal"
