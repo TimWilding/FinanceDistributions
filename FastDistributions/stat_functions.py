@@ -57,8 +57,9 @@ def parallel_bootstrap(
     lst_bs = []
     lst_results = []
     n = ret_data.shape[axis]
+    samp_size = n
     if sample_size is not None:
-        n = sample_size
+        samp_size = sample_size
     if include_sample:
         dict_opt = fn(ret_data)
         dict_opt["trial"] = "Sample Optimal"
@@ -69,7 +70,7 @@ def parallel_bootstrap(
         print("Starting bootstrap threads")
     for i in range(nbs):
         # Create BS pointers into dataset with size n
-        sample_idx = np.random.choice(range(n), size=n, replace=True)
+        sample_idx = np.random.choice(range(n), size=samp_size, replace=True)
         ret_sample = _array_slice_sample(ret_data, sample_idx, axis)
         lst_results.append(
             pool.apply_async(_bootstrap_sample, (ret_sample, f"Simulation {i+1}", fn))
