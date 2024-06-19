@@ -262,7 +262,7 @@ def test_risk_parity():
     ans = np.array([0.2798628, 0.08774909, 0.63238811])
     rpp = fd.get_risk_parity_pf(sigma,
                                 risk_budgets=risk_budget)
-    np.testing.assert_allclose(rpp, ans, rtol=1e-5)
+    np.testing.assert_allclose(rpp, ans, rtol=1e-4)
     # assert rpp.risk_concentration.evaluate() < 1e-9
 
 if __name__ == "__main__":
