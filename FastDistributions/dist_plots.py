@@ -195,7 +195,16 @@ def plot_mahal_dist(mahal_dist, dates, num_assets, title, cutoff=0.95, ax=None):
     ax.set_ylim([0.0, np.max(mahal_dist)])
     ax.set_title(title)
 
-def plot_multi_function(dict_fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Function'):
+
+def plot_multi_function(
+    dict_fn,
+    x_lim=[-6, 6],
+    y_lim=None,
+    n=10000,
+    title="Function",
+    x_label="x",
+    y_label="y",
+):
     """
     Takes a function and produces a graph using the limits
     given
@@ -206,9 +215,11 @@ def plot_multi_function(dict_fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Func
     """
     t_min = x_lim[0]
     t_max = x_lim[1]
-# Used t_vals & y_vals to separate ourselves from the y & t symbols used to build the solution to the ODE
-    t_vals = np.linspace(t_min, t_max, n) # build a grid of t values to use for calculating the function values
-#    y_vals = fn(t_vals) # Apply the function to the grid of t values to get a python array of function values
+    # Used t_vals & y_vals to separate ourselves from the y & t symbols used to build the solution to the ODE
+    t_vals = np.linspace(
+        t_min, t_max, n
+    )  # build a grid of t values to use for calculating the function values
+    #    y_vals = fn(t_vals) # Apply the function to the grid of t values to get a python array of function values
     y_max = 0.0
     y_min = 0.0
 
@@ -221,18 +232,18 @@ def plot_multi_function(dict_fn, x_lim=[-6, 6], y_lim=None, n=10000, title='Func
         plt.plot(t_vals, y_vals, dict_fn[fn_name][1], label=fn_name)
 
     if y_lim is None:
-        y_max = 1.1*y_max - 0.1*y_min
-        y_min = 0#1.1*np.min(y_vals) - 0.1*np.max(y_vals)
+        y_max = 1.1 * y_max - 0.1 * y_min
+        y_min = 0  # 1.1*np.min(y_vals) - 0.1*np.max(y_vals)
     else:
         y_min = y_lim[0]
         y_max = y_lim[1]
 
-    plt.xlabel("x")
-    plt.ylabel("y")
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
     plt.title(title)
 
     plt.ylim([y_min, y_max])
-    #plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0)) # plot tick marks every 0.1 along the axis
+    # plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0)) # plot tick marks every 0.1 along the axis
     plt.xlim([t_min, t_max])
     plt.legend()
     plt.show()
