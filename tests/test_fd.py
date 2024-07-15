@@ -9,7 +9,7 @@ from scipy.stats import norm
 from pandas import read_csv
 import matplotlib.pyplot as plt
 import seaborn as sns
-from .context import FastDistributions as fd
+import FastDistributions as fd
 
 
 def plot_stats_col(df, col_name, axis_label, chart_title, id_field="Identifier"):
