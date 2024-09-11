@@ -45,3 +45,9 @@ from FastDistributions.allocation_recipes import (
     get_risk_parity_pf,
     get_pf_stats,
 )
+from FastDistributions.black_litterman import (
+    black_litterman_stats,
+    fusai_meucci_consistency,
+    theils_view_compatibility,
+    calc_delta_kl,
+)
