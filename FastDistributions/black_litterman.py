@@ -120,3 +120,109 @@ def fusai_meucci_consistency(pi_hat, pi, Sigma_mu, P, Omega):
     dMdq = 2 * (pi_hat - pi) @ P.T @ inv(P @ Sigma_mu @ P.T + Omega)
     dPdq = -chi2.pdf(M_q, pi_hat.shape[0]) * dMdq
     return M_q, P_M_q, dPdq
+
+
+def theils_source(Sigma_mu, P, Omega):
+    """
+    Determine the contribution to the posterior precision of the prior and the views
+    this sums to 1 across all views and the prior
+    Inputs
+    ============
+    Sigma_mu = nassets x nassets covariance matrix of expected mean returns
+    P = nassets x nviews matrix of portfolios used to construct views
+    Omega = nviews x nviews covariance matrix of view returns
+    Outputs
+    ============
+    theta_prior = posterior precision of the prior
+    theta_views = posterior precision of the views
+    theta_prior + sum(theta_views) = 1.0
+    """
+    n_assets = P.shape[1]
+    n_views = P.shape[0]
+    H_inv = inv(inv(Sigma_mu) + P.T @ inv(Omega) @ P)
+    theta_prior = (1 / n_assets) * np.trace(inv(Sigma_mu) @ H_inv)
+    omega_p = inv(Omega) @ P
+    theta_views = np.zeros(n_views)
+    for i in range(n_views):
+        P_slice = np.outer(P[i, :], omega_p[i, :])
+        theta_views_mat = (1 / n_assets) * P_slice @ H_inv
+        theta_views[i] = np.trace(theta_views_mat)
+    return theta_prior, theta_views
+
+
+def he_litterman_lambda(t, Sigma, P, q, Omega, tau=1.0, delta=5.0, exp_returns=False):
+    """
+    The Black-Litterman method returns a portfolio that is a combination of the
+    equilibrium portfolio and a linear combination of the view portfolios.
+    He & Litterman (2005) calculate Lambda - the coefficients used to combine
+    those view portfolios. This routine calculates Lambda and the sensitivity
+    of the Lambda coefficient to the forecast returns of the view portfolios
+
+    Input
+    ==========
+    t = nassets x 1 vector of model portfolio weights
+    Sigma = nassets x nassets covariance matrix of returns
+    P = nviews x nassets matrix of portfolios used to construct views
+    q = nviews x 1  vector of expected view returns
+    Omega = nviews x nviews covariance matrix of view returns
+    tau = scalar containing scaling parameter for covariance matrix
+    delta = scalar containing scaling parameter for expected returns
+
+    Outputs
+    ==========
+    he_lit_lam = q x 1 vector used to construct linear combination
+    of view portfolios
+    d_lam_dq = sensitivity of he_lit_lam to view returns
+    """
+    f = 0.0
+    if exp_returns:
+        f = 1.0
+    pi = delta * Sigma @ t  # calculate equilibrium expected returns
+    q_eq = P @ pi
+
+    B = (tau / (f + tau)) ** 2 * inv(Omega + (f / (f + tau)) * P @ Sigma @ P.T)
+    view_cov = P @ Sigma @ P.T
+    A = (tau / (f + tau)) * inv(view_cov + Omega)
+    A = A + (tau / (f + tau)) ** 2 * inv(
+        Omega + (f / (f + tau)) * view_cov
+    ) @ view_cov @ inv(view_cov + Omega)
+    #    pi_hat, Sigma_hat = black_litterman_stats(t, Sigma, P, q, Omega, tau, delta)
+    he_lit_lam = ((f + tau) / delta) * (A @ (q - q_eq) + B @ q_eq)
+    d_lam_dq = ((f + tau) / delta) * A
+    return he_lit_lam, d_lam_dq
+
+
+def reverse_optimise(t, Sigma, delta):
+    """
+    Calculate the returns of the portfolio that would make
+    the given portfolio mean-variance optimal with a given
+    risk tolerance.
+    Inputs
+    ========
+    t = model portfolio
+    Sigma = covariance matrix
+    delta = risk aversion coefficient
+    Outputs
+    =======
+    pi = expected returns
+    """
+    pi = delta * Sigma @ t
+    return pi
+
+
+def unconstrained_optimal_portfolio(Sigma, mu, delta):
+    """
+    Calculate the unconstrained optimal portfolio given
+    covariance matrix, expected returns, and risk aversion
+    coefficient.
+    Inputs
+    ========
+    Sigma = covariance matrix
+    mu = expected returns
+    delta = risk aversion coefficient
+    Outputs
+    =======
+    x = unconstrained optimal portfolio
+    """
+    x = (inv(Sigma) @ mu) / delta
+    return x

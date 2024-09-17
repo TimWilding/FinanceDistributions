@@ -171,6 +171,12 @@ def corr_conv(cov_mat):
 
     return corr_mat
 
+def cov_from_correl(correl_mat, sigma):
+    """
+    Convert a correlation matrix and volatilities to a covariance matrix
+    """
+    return correl_mat * np.outer(sigma, sigma)
+
 
 def mahal_dist(samp_ave, samp_covar, returns_data):
     """

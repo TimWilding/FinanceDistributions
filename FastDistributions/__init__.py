@@ -30,6 +30,7 @@ from FastDistributions.correl_calcs import (
     nearest_pos_def,
     corr_conv,
     mahal_dist,
+    cov_from_correl,
 )
 from FastDistributions.stat_functions import (
     parallel_bootstrap,
@@ -50,4 +51,8 @@ from FastDistributions.black_litterman import (
     fusai_meucci_consistency,
     theils_view_compatibility,
     calc_delta_kl,
+    he_litterman_lambda,
+    theils_source,
+    reverse_optimise,
+    unconstrained_optimal_portfolio,
 )
