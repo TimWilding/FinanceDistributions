@@ -265,5 +265,66 @@ def test_risk_parity():
     np.testing.assert_allclose(rpp, ans, rtol=1e-4)
     # assert rpp.risk_concentration.evaluate() < 1e-9
 
+
+
+def test_black_litterman():
+    # Data given in He & Litterman 1999 for illustrative calculations
+    lst_countries =['Australia','Canada','France','Germany','Japan','UK','USA']
+
+# Table 1 - Correlations
+    correl_hel = np.array([[1, 0.488, 0.478, 0.515, 0.439, 0.512, 0.491],
+                       [0.488, 1, 0.664, 0.655, 0.31, 0.608, 0.779],
+                       [0.478, 0.664, 1, 0.861, 0.355, 0.783, 0.668],
+                       [0.515, 0.655, 0.861, 1, 0.354, 0.777, 0.653],
+                       [0.439, 0.31, 0.355, 0.354, 1, 0.405, 0.306],
+                       [0.512, 0.608, 0.783, 0.777, 0.405, 1, 0.652],
+                       [0.491, 0.779, 0.668, 0.653, 0.306, 0.652, 1]])
+
+# Table 2 - volatilities and market cap weights
+    sigma_hel = np.array([16, 20.3, 24.8, 27.1, 21, 20, 18.7])/100
+    w_hel = np.array([1.6, 2.2, 5.2, 5.5, 11.6, 12.4, 61.5])/100
+
+# View Portfolios
+    P = np.array([[0.0, 0.0,   -29.5, 100.0, 0.0, -70.5, 0.0],
+                 [0.0, 100.0, 0.0, 0.0,   0.0, 0.0, -100.0]])/100
+
+
+# Calculate the covariance matrix from the data
+    cov_hel = fd.cov_from_correl(correl_hel, sigma_hel)
+
+# Calculate the equilibrium returns from the equilibrium weights and the covariance
+# matrix
+    delta = 2.5
+    tau_hel = 0.05
+    q = np.array([5, 3])/100
+    Omega = np.array([[0.021, 0.0], 
+                      [0.0, 0.017]])*tau_hel
+    pi = fd.reverse_optimise(w_hel, cov_hel, delta) # calculate equilibrium returns
+    print(pi)
+    pi_hat, sigma_hat = fd.black_litterman_stats(w_hel, cov_hel, P, q, Omega, tau_hel, delta, True)
+
+    w_opt = fd.unconstrained_optimal_portfolio(sigma_hat, pi_hat, delta)
+    print("Revised Optimal Portfolio")
+    print(w_opt)
+    print("Change from Original")
+    print(w_opt - (w_hel/ (1 + tau_hel)))
+    lam, dlam_dq = fd.he_litterman_lambda(w_hel, cov_hel, P, q, Omega, tau_hel, delta, True)
+    print('Lambda')
+    print(lam)
+    print('dlamdq')
+    print(dlam_dq) 
+    print('Fusai-Meucci Consistency')
+    print(fd.fusai_meucci_consistency(pi_hat, pi, tau_hel*cov_hel, P, Omega))
+    print('Theils View Compatibility')
+    print(fd.theils_view_compatibility(q, pi, tau_hel*cov_hel, P, Omega))
+    te, dtedq = fd.braga_natale_measure(w_hel, cov_hel, P, q, Omega, tau_hel, delta)
+    print('Braga Natale measure = tracking error = {0:5.2f}%'.format(te))
+    print(dtedq)   
+    ans_opt = np.array([0.0152381, 0.41893107, -0.03471219, 0.33792671, 0.11047619, -0.08321452, 0.1877356])
+
+    np.testing.assert_allclose(w_opt, ans_opt, rtol=1e-6)
+
+
+
 if __name__ == "__main__":
     test_dists()

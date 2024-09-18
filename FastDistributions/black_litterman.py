@@ -226,3 +226,21 @@ def unconstrained_optimal_portfolio(Sigma, mu, delta):
     """
     x = (inv(Sigma) @ mu) / delta
     return x
+
+
+def braga_natale_measure(t, Sigma, P, q, Omega, tau=1.0, delta=1.0, exp_returns=False):
+    """
+    Calculate the tracking error volatility of the Black-Litterman portfolio
+    and the sensitivity of the tracking error to the view
+    """
+    pi_hat, Sigma_hat = black_litterman_stats(t, Sigma, P, q, Omega, tau, delta, exp_returns)
+    w_bl = unconstrained_optimal_portfolio(Sigma_hat, pi_hat, delta)
+    lam, dlamdq = he_litterman_lambda(t, Sigma, P, q, Omega, tau, delta, exp_returns)
+
+    te = np.sqrt((w_bl - t) @ Sigma @ (w_bl - t))
+    dtedw = Sigma @ (w_bl - t) / te
+    f = 0.0
+    if exp_returns:
+        f = 1.0
+    dtedq = dtedw @ P.T @ dlamdq / (f + tau)
+    return te, dtedq

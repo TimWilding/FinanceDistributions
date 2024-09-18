@@ -55,4 +55,5 @@ from FastDistributions.black_litterman import (
     theils_source,
     reverse_optimise,
     unconstrained_optimal_portfolio,
+    braga_natale_measure,
 )
