@@ -39,11 +39,12 @@ def _download_single_asset(asset, download_period, start, end):
 
 def download_yahoo_returns(
     assets,
-    download_period="20y",
+    download_period="10y",
     endweekday: int = 2,
     start=None,
     end=None,
     threads: int = 4,
+    price_field="Close",
 ) -> pd.DataFrame:
     """
     Takes the list of assets and downloads them from Yahoo Finance
@@ -89,7 +90,9 @@ def download_yahoo_returns(
     # Convert to datetime and drop timezone info
     df_out["Date"] = pd.to_datetime(df_out["Date"], utc=True).dt.normalize()
 
-    return calculate_returns(df_out, "Ticker", "Date", endweekday=endweekday)
+    return calculate_returns(
+        df_out, "Ticker", "Date", price_field=price_field, endweekday=endweekday
+    )
 
 
 def calculate_returns(
@@ -117,8 +120,6 @@ def calculate_returns(
     df_out = df_out.dropna()  # get rid of the log returns that are rubbish
     print("Calculated Returns")
     return df_out
-
-
 
 
 def get_test_data(download_years=-1):

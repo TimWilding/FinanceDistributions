@@ -60,11 +60,16 @@ def calc_delta_kl(t, mu, Sigma):
     """
     Use the Kulback-Liebler Divergence to calculate the
     optimal delta from a model portfolio
+
     Inputs
     ========
     t = model portfolio
     mu = expected returns
     Sigma = covariance matrix
+
+    Outputs
+    ========
+    delta = risk aversion for optimal portfolio
     """
     delta = t.T @ mu / (t.T @ Sigma @ t)
     return delta
@@ -75,6 +80,7 @@ def theils_view_compatibility(q, pi, Sigma_mu, P, Omega):
     Return Theil's (1971) measure of view compatibility
     Calculation taken from Jay Walters comprehensive review of
     Black-Litterman
+
     Inputs
     ============
     q = nviews x 1  vector of expected view returns
@@ -82,6 +88,7 @@ def theils_view_compatibility(q, pi, Sigma_mu, P, Omega):
     Sigma_mu = nassets x nassets covariance matrix of expected mean returns
     P = nassets x nviews matrix of portfolios used to construct views
     Omega = nviews x nviews covariance matrix of view returns
+
     Output
     ===========
     eps_hat = Theil's measure
@@ -103,12 +110,16 @@ def theils_view_compatibility(q, pi, Sigma_mu, P, Omega):
 
 def fusai_meucci_consistency(pi_hat, pi, Sigma_mu, P, Omega):
     """
-    Calculate Fusai & Meucci's measure of consistency
+    Calculate Fusai & Meucci's measure of consistency. This
+    measure is the Mahlanobis distance of the Black-Litterman
+    forecast returns from the equilibrium returns.
+
     Inputs
     ============
     pi_hat = nassets x 1 vector of Black-Litterman expected returns
     pi = nassets x 1 vector of equilibrium expected returns
     Sigma_mu = nassets x nassets covariance matrix of expected mean returns
+
     Outputs
     ============
     M_q = Fusai Meucci measure of consistency (Mahlanobis Distance)
@@ -233,7 +244,9 @@ def braga_natale_measure(t, Sigma, P, q, Omega, tau=1.0, delta=1.0, exp_returns=
     Calculate the tracking error volatility of the Black-Litterman portfolio
     and the sensitivity of the tracking error to the view
     """
-    pi_hat, Sigma_hat = black_litterman_stats(t, Sigma, P, q, Omega, tau, delta, exp_returns)
+    pi_hat, Sigma_hat = black_litterman_stats(
+        t, Sigma, P, q, Omega, tau, delta, exp_returns
+    )
     w_bl = unconstrained_optimal_portfolio(Sigma_hat, pi_hat, delta)
     lam, dlamdq = he_litterman_lambda(t, Sigma, P, q, Omega, tau, delta, exp_returns)
 

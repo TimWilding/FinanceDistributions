@@ -28,10 +28,12 @@ setup(
         "Py-BOBYQA",
         "seaborn",
         "statsmodels",
-        "cvxpy"
+        "cvxpy",
     ],
     package_dir={"": "FastDistributions"},
-    package_data = {"interp_data": ["*"],},
+    package_data={
+        "interp_data": ["*"],
+    },
     keywords=["python", "finance", "distributions", "utilities"],
     classifiers=[
         "Development Status :: 3 - Alpha",
