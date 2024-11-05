@@ -31,6 +31,7 @@ def _download_single_asset(asset, download_period, start, end):
             df_history = yf.download([ticker], threads=False, start=start)
         else:
             df_history = yf.download([ticker], threads=False, start=start, end=end)
+    df_history.columns = df_history.columns.get_level_values(0)  # Remove the second level of the multiindex           
     df_history["Ticker"] = ticker
     df_history["Name"] = asset[1]
     df_history = df_history.reset_index()
