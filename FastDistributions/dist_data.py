@@ -25,12 +25,13 @@ def _download_single_asset(asset, download_period, start, end):
     if ticker is None:
         return None
     if start is None:
-        df_history = yf.download([ticker], threads=False, period=download_period)
+        df_history = yf.download([ticker], threads=False,
+                                 period=download_period, multi_level_index=True)
     else:
         if end is None:
-            df_history = yf.download([ticker], threads=False, start=start)
+            df_history = yf.download([ticker], threads=False, start=start, multi_level_index=True)
         else:
-            df_history = yf.download([ticker], threads=False, start=start, end=end)
+            df_history = yf.download([ticker], threads=False, start=start, end=end, multi_level_index=True)
     df_history.columns = df_history.columns.get_level_values(0)  # Remove the second level of the multiindex           
     df_history["Ticker"] = ticker
     df_history["Name"] = asset[1]
@@ -44,7 +45,6 @@ def download_yahoo_returns(
     endweekday: int = 2,
     start=None,
     end=None,
-    threads: int = 4,
     price_field="Close",
 ) -> pd.DataFrame:
     """
@@ -68,19 +68,17 @@ def download_yahoo_returns(
 
     # multi thread the code
     # using https://stackoverflow.com/questions/6893968/how-to-get-the-return-value-from-a-thread
-    pool = ThreadPool(processes=threads)
+    #  pool = ThreadPool(processes=threads)
     lst_results = []
     for dl_asset in assets:
         print(f"Downloading {dl_asset[1]}")
         lst_results.append(
-            pool.apply_async(
-                _download_single_asset, (dl_asset, download_period, start, end)
-            )
+                _download_single_asset(dl_asset, download_period, start, end)
         )
 
     df_out = None
     for result in lst_results:
-        df_history = result.get()
+        df_history = result # .get()
         if df_history is not None:
             if df_out is None:
                 df_out = df_history
