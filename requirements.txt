@@ -12,6 +12,7 @@ ca-certificates
 certifi 
 charset-normalizer 
 contourpy 
+cvxpy
 cycler 
 expat 
 fonttools 
@@ -67,6 +68,7 @@ munkres
 numpy 
 numpy-base 
 openjpeg 
+openpyxl
 openssl 
 packaging 
 pandas 

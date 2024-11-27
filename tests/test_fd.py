@@ -245,13 +245,20 @@ def test_dists():
     print("Finished testing")
 
 
+def test_cached_read():
+    df_prices = fd.read_cached_excel('https://www.eurekahedge.com/Indices/ExportIndexReturnsToExcel?IndexType=Eurekahedge&IndexId=640', header=3)
+    df_prices['LogReturn'] = np.log((100 + df_prices['PercentReturn'])/100)
+    df_prices = df_prices.dropna()
+    print(fd.probabilistic_sharpe_ratio(df_prices['LogReturn'].values))
+    print("Finished testing cached Excel read")
+
+
 def test_regress():
     df_prices = fd.get_test_data(5)
     pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
     df = fd.sample_regress(pivot_df, "SP 500", True, True)
     print("Finished testing regression")
-
 
 def test_risk_parity():
     """This is a test on a known problem"""

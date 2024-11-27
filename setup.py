@@ -29,6 +29,7 @@ setup(
         "seaborn",
         "statsmodels",
         "cvxpy",
+        "openpyxl",
     ],
     package_dir={"": "FastDistributions"},
     package_data={

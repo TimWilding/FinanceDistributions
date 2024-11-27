@@ -16,6 +16,7 @@ from FastDistributions.dist_data import (
     download_yahoo_returns,
     calculate_returns,
     get_test_data,
+    read_cached_excel,
 )
 from FastDistributions.PRIIPS_calc import (
     PRIIPS_stats,
@@ -56,4 +57,9 @@ from FastDistributions.black_litterman import (
     reverse_optimise,
     unconstrained_optimal_portfolio,
     braga_natale_measure,
+)
+from FastDistributions.perf_stats import (
+    sharpe_ratio,
+    probabilistic_sharpe_ratio,
+    omega_ratio,
 )

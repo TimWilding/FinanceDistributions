@@ -11,4 +11,5 @@ dependencies:
   - scikit-learn
   - statsmodels
   - cvxpy
+  - openpyxl
 prefix: C:\Users\Tim\AppData\Local\anaconda3\envs\fastdistributions

@@ -11,6 +11,9 @@ import pandas as pd
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 from pandas import read_csv
+import hashlib
+import requests
+
 
 
 def _download_single_asset(asset, download_period, start, end):
@@ -93,6 +96,38 @@ def download_yahoo_returns(
         df_out, "Ticker", "Date", price_field=price_field, endweekday=endweekday
     )
 
+def read_cached_excel(url, cache_dir="cache", **read_excel_kwargs)->pd.DataFrame:
+    """
+    Reads an Excel file into a DataFrame, caching it locally.
+
+    Parameters:
+        url (str): The URL of the Excel file.
+        cache_dir (str): The directory where cached files are stored. Default is "cache".
+        **read_excel_kwargs: Additional arguments passed to `pandas.read_excel`.
+
+    Returns:
+        pd.DataFrame: The DataFrame read from the Excel file.
+    """
+    # Ensure the cache directory exists
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Generate a unique filename for the cached file based on the URL hash
+    file_hash = hashlib.md5(url.encode()).hexdigest()
+    local_filename = os.path.join(cache_dir, f"{file_hash}.xlsx")
+
+    # Check if the file is already cached
+    if not os.path.exists(local_filename):
+        # Download the file if it is not cached
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an error for bad responses
+            with open(local_filename, "wb") as f:
+                f.write(response.content)
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"Failed to download the file from {url}. Error: {e}")
+
+    # Read the Excel file into a DataFrame and return it
+    return pd.read_excel(local_filename, **read_excel_kwargs)
 
 def calculate_returns(
     df,
