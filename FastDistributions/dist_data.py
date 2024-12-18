@@ -15,7 +15,6 @@ import hashlib
 import requests
 
 
-
 def _download_single_asset(asset, download_period, start, end):
     """
     download a single asset using the yfinance api and append
@@ -28,14 +27,21 @@ def _download_single_asset(asset, download_period, start, end):
     if ticker is None:
         return None
     if start is None:
-        df_history = yf.download([ticker], threads=False,
-                                 period=download_period, multi_level_index=True)
+        df_history = yf.download(
+            [ticker], threads=False, period=download_period, multi_level_index=True
+        )
     else:
         if end is None:
-            df_history = yf.download([ticker], threads=False, start=start, multi_level_index=True)
+            df_history = yf.download(
+                [ticker], threads=False, start=start, multi_level_index=True
+            )
         else:
-            df_history = yf.download([ticker], threads=False, start=start, end=end, multi_level_index=True)
-    df_history.columns = df_history.columns.get_level_values(0)  # Remove the second level of the multiindex           
+            df_history = yf.download(
+                [ticker], threads=False, start=start, end=end, multi_level_index=True
+            )
+    df_history.columns = df_history.columns.get_level_values(
+        0
+    )  # Remove the second level of the multiindex
     df_history["Ticker"] = ticker
     df_history["Name"] = asset[1]
     df_history = df_history.reset_index()
@@ -76,12 +82,12 @@ def download_yahoo_returns(
     for dl_asset in assets:
         print(f"Downloading {dl_asset[1]}")
         lst_results.append(
-                _download_single_asset(dl_asset, download_period, start, end)
+            _download_single_asset(dl_asset, download_period, start, end)
         )
 
     df_out = None
     for result in lst_results:
-        df_history = result # .get()
+        df_history = result  # .get()
         if df_history is not None:
             if df_out is None:
                 df_out = df_history
@@ -96,7 +102,8 @@ def download_yahoo_returns(
         df_out, "Ticker", "Date", price_field=price_field, endweekday=endweekday
     )
 
-def read_cached_excel(url, cache_dir="cache", **read_excel_kwargs)->pd.DataFrame:
+
+def read_cached_excel(url, cache_dir="cache", **read_excel_kwargs) -> pd.DataFrame:
     """
     Reads an Excel file into a DataFrame, caching it locally.
 
@@ -128,6 +135,7 @@ def read_cached_excel(url, cache_dir="cache", **read_excel_kwargs)->pd.DataFrame
 
     # Read the Excel file into a DataFrame and return it
     return pd.read_excel(local_filename, **read_excel_kwargs)
+
 
 def calculate_returns(
     df,

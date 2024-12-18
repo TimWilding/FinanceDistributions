@@ -219,6 +219,9 @@ def test_dists():
 
     ls_fit = fd.LevyStableInterp.fitclass(sp_ret)
     gs_fit = fd.GeneralisedSkewT.fitclass(sp_ret)
+    ent_fit = fd.EntropyDistribution.fitclass(sp_ret)
+
+
     norm_mod = norm.fit(sp_ret)
     norm_fit = norm(norm_mod[0], norm_mod[1])
 
@@ -226,6 +229,7 @@ def test_dists():
         "Levy-Stable": [ls_fit.cdf, "r-"],
         "Normal": [norm_fit.cdf, "b-"],
         "Generalised SkewT": [gs_fit.cdf, "g-"],
+        "Entropy Distribution": [ent_fit.cdf, "k-"],
     }
     ref_fn = [lambda x: 0.01 * (x) ** (-1.6), "y--", "Power Law"]
     fd.plot_log_cdf(
@@ -234,12 +238,14 @@ def test_dists():
     dict_pdf = {
         "Levy-Stable": [ls_fit.pdf, "b-"],
         "Generalised SkewT": [gs_fit.pdf, "k-"],
+        "Entropy Distribution": [ent_fit.pdf, "r-"],
     }
     fd.plot_hist_fit(sp_ret, "SP 500", dict_pdf, 50, log_scale=True)
     dict_ppf = {
         "Levy-Stable": [ls_fit.ppf, "bo"],
         "Generalised SkewT": [gs_fit.ppf, "go"],
-    }
+        "Entropy Distribution": [ent_fit.ppf, "ro"],
+        }
     fd.plot_qq(sp_ret, "SP500 Returns", dict_ppf, nbins=500)
 
     print("Finished testing")
