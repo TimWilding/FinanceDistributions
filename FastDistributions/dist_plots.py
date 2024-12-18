@@ -204,6 +204,7 @@ def plot_multi_function(
     title="Function",
     x_label="x",
     y_label="y",
+    y_log_scale=False
 ):
     """
     Takes a function and produces a graph using the limits
@@ -237,7 +238,8 @@ def plot_multi_function(
     else:
         y_min = y_lim[0]
         y_max = y_lim[1]
-
+    if y_log_scale:
+        plt.yscale('log')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title)

@@ -114,7 +114,7 @@ class EntropyDistribution(rv_continuous):
 
     @staticmethod
     def fit(
-        x, prob=None, display_progress=True, x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0])
+        x, prob=None, display_progress=True, x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0], max_iter=50000, x_toler=1e-10)
     ):
         """
         Uses MLE to return Generalised Skew-T parameters this is
@@ -130,12 +130,12 @@ class EntropyDistribution(rv_continuous):
             statistics will be returned, but there are exceptions (e.g.
             ``norm``).
         """
-        sol = _entropy_fit(x, prob, x0, display_progress)
+        sol = _entropy_fit(x, prob, x0, display_progress, max_iter, x_toler)
         return sol.x
 
     @staticmethod
     def fitclass(
-        x, prob=None, display_progress=True, x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0])
+        x, prob=None, display_progress=True, x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0], max_iter=50000, x_toler=1e-10)
     ):
         """
         Uses MLE to return Generalised Skew-T class this is
@@ -151,7 +151,7 @@ class EntropyDistribution(rv_continuous):
             statistics will be returned, but there are exceptions (e.g.
             ``norm``).
         """
-        sol = _entropy_fit(x, prob, x0, display_progress)
+        sol = _entropy_fit(x, prob, x0, display_progress, max_iter, x_toler)
         return EntropyDistribution(sol.x[1::])
 
 
@@ -273,6 +273,9 @@ def _entropy_fit(
     prob=None,
     x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0]),
     display_progress=True,
+    max_iter=50000,
+    x_toler=1e-10
+
 ):
 
     ent_fit = EntropyDistFit(returns_data, npoly=x0.shape[0])
@@ -316,9 +319,9 @@ def _entropy_fit(
         bounds=bds,
         options={
             "gtol": 1e-8,
-            "xtol": 1e-16,
+            "xtol": x_toler,
             "disp": display_progress,
-            "maxiter": 50000,
+            "maxiter": max_iter,
         },
     )
 
@@ -328,5 +331,5 @@ def _entropy_fit(
     if not res.success:
         print("Fitting of Entropy Distribution failed")
         print(res)
-        raise FitError("Fitting error in Generalised Skew-T fitting")
+        raise FitError("Fitting error in Entropy Distribution fitting")
     return res
