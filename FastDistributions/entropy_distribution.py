@@ -5,6 +5,22 @@ from scipy.stats import norm, rv_continuous, FitError
 
 
 def gauss_legendre_sample(n):
+    """
+    This routine returns a sample of x values and weights
+    to use when calculating the integral of a function between
+    -infinity and +infinity. The integral is approximated 
+    by the sum of the weights * the function value at each x
+
+    For a function f, the integral is approx:
+        np.sum(x_wts * f(x_vals))
+
+    Args:
+      n: an integer to determine the number of Legendre polynomials
+
+    Returns:
+      x_vals: numpy array containing points for function evaluation
+      x_wts:  numpy array containing weights for each point
+    """
     t, w = roots_legendre(n)
     x_transform = lambda t: t / (1 - t**2)
     dxdt_inv = lambda t: (1 + t**2) / (1 - t**2) ** 2
@@ -15,7 +31,9 @@ def gauss_legendre_sample(n):
 
 def vandermonde_matrix(x, m=4):
     """
-    Constructs a Vandermonde matrix.
+    Constructs a Vandermonde matrix. Each column of the 
+    vandermonde matrix contains the values of x raised to the 
+    power i
 
     Args:
        x: A 1-D NumPy array.
@@ -51,7 +69,13 @@ def safe_log_likelihoods(ƛ, x_vals, max_val=100.0):
 class EntropyDistribution(rv_continuous):
     """
     Class to represent Entropy Distributions using the same form as the
-    scipy.stats.distribution objects.
+    scipy.stats.distribution objects. Entropy Distributions have a polynomial
+    log-likelihood and characterise the returns distribution that maximises
+    entropy given knowledge of a set number of moments. In the case of 2 moments,
+    this is the classical Normal distribution, but this routine can handle 
+    distributions that have a higher number of moments such as Skew & Kurtosis
+    and is designed to handle situations such as financial data which are known
+    to have several higher moments.
     """
 
     def __init__(self, ƛ=None, n=200):
@@ -122,7 +146,7 @@ class EntropyDistribution(rv_continuous):
         x_toler=1e-10,
     ):
         """
-        Uses MLE to return Generalised Skew-T parameters this is
+        Uses MLE to return Entropy Distribution parameters this is
         set to be similar to fit in the scipy.stats package so
         it should raises a TypeError or ValueError if the input
         is invalid and a scipy.stats.FitError if fitting fails
@@ -130,10 +154,7 @@ class EntropyDistribution(rv_continuous):
         Returns
         -------
         parameter_tuple : tuple of floats
-            Estimates for any shape parameters (if applicable), followed by
-            those for location and scale. For most random variables, shape
-            statistics will be returned, but there are exceptions (e.g.
-            ``norm``).
+            Estimates for any shape parameters (if applicable)
         """
         sol = _entropy_fit(x, prob, x0, display_progress, max_iter, x_toler)
         return sol.x
@@ -148,7 +169,7 @@ class EntropyDistribution(rv_continuous):
         x_toler=1e-10,
     ):
         """
-        Uses MLE to return Generalised Skew-T class this is
+        Uses MLE to return Entropy Distribution class this is
         set to be similar to fit in the scipy.stats package so
         it should raises a TypeError or ValueError if the input
         is invalid and a scipy.stats.FitError if fitting fails
@@ -156,10 +177,7 @@ class EntropyDistribution(rv_continuous):
         Returns
         -------
         parameter_tuple : tuple of floats
-            Estimates for any shape parameters (if applicable), followed by
-            those for location and scale. For most random variables, shape
-            statistics will be returned, but there are exceptions (e.g.
-            ``norm``).
+            Estimates for any shape parameters.
         """
         sol = _entropy_fit(x, prob, x0, display_progress, max_iter, x_toler)
         return EntropyDistribution(sol.x[1::])
