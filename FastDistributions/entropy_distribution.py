@@ -114,7 +114,12 @@ class EntropyDistribution(rv_continuous):
 
     @staticmethod
     def fit(
-        x, prob=None, display_progress=True, x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0], max_iter=50000, x_toler=1e-10)
+        x,
+        prob=None,
+        display_progress=True,
+        x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0]),
+        max_iter=50000,
+        x_toler=1e-10,
     ):
         """
         Uses MLE to return Generalised Skew-T parameters this is
@@ -135,7 +140,12 @@ class EntropyDistribution(rv_continuous):
 
     @staticmethod
     def fitclass(
-        x, prob=None, display_progress=True, x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0], max_iter=50000, x_toler=1e-10)
+        x,
+        prob=None,
+        display_progress=True,
+        x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0]),
+        max_iter=50000,
+        x_toler=1e-10,
     ):
         """
         Uses MLE to return Generalised Skew-T class this is
@@ -274,8 +284,7 @@ def _entropy_fit(
     x0=np.array([0.0, 0.0, 1.0, 0.0, 0.0]),
     display_progress=True,
     max_iter=50000,
-    x_toler=1e-10
-
+    x_toler=1e-10,
 ):
 
     ent_fit = EntropyDistFit(returns_data, npoly=x0.shape[0])
