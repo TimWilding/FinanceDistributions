@@ -29,7 +29,7 @@ def gauss_legendre_sample(n):
     return x_vals, x_wts
 
 
-def vandermonde_matrix(x, m=4):
+def vandermonde_matrix(x, m=4, k=0):
     """
     Constructs a Vandermonde matrix. Each column of the 
     vandermonde matrix contains the values of x raised to the 
@@ -38,11 +38,12 @@ def vandermonde_matrix(x, m=4):
     Args:
        x: A 1-D NumPy array.
        m: Maximum power to use in the matrix (defaults to 4).
+       k: Minimum power to use in the matrix (defaults to 0)
 
     Returns:
        A Vandermonde matrix.
     """
-    X = np.column_stack([x**i for i in range(m + 1)])
+    X = np.column_stack([x**i for i in range(k, m + 1)])
     return X
 
 
