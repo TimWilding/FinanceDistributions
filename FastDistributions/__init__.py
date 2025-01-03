@@ -25,6 +25,7 @@ from FastDistributions.dist_data import (
     read_cached_excel,
 )
 from FastDistributions.PRIIPS_calc import (
+    Cornish_Fisher_percentile,
     PRIIPS_stats,
     PRIIPS_stats_2020,
     PRIIPS_stats_df,
