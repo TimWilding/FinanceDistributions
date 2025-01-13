@@ -1,5 +1,6 @@
 from FastDistributions.generalised_skewt import GeneralisedSkewT
 from FastDistributions.levy_stable import LevyStableInterp
+from FastDistributions.meixner import Meixner
 from FastDistributions.entropy_distribution import (
     EntropyDistribution, 
     EntropyDistFit,

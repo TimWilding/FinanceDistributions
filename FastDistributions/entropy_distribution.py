@@ -1,3 +1,10 @@
+"""
+Entropy Distributions are an extension of the Normal distribution that rely on the maximum 
+entropy property. If all we know about a distribution is its first two moments, then 
+a Normal distribution is the distribution with the maximum entropy. This can be extended
+to the situation with higher moments and has solutions where the pdf is the exponential
+of a polynomial function.
+"""
 import numpy as np
 from scipy.special import roots_legendre
 from scipy.optimize import minimize, NonlinearConstraint, Bounds
