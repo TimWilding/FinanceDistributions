@@ -50,7 +50,8 @@ def meixner_loglikelihood(
     log_exp_factor = beta * (x - μ) / alpha
     arg = delta + 1j * (x - μ) / alpha
     log_gamma_term = 2 * np.log(
-        np.abs(gamma(arg))
+#        np.abs(gamma(arg))
+        np.maximum(np.abs(gamma(arg)), 1e-300)
     )  # Log of the squared modulus of Gamma function
 
     # Log-PDF value
