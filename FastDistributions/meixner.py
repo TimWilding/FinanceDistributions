@@ -274,15 +274,16 @@ def _meixner_fit(returns_data, prob=None, display_progress=True):
     # Note that this assumes that
     # SCALE_VAR = 0, SKEW_VAR=1, SHAPE_VAR=2, and LOC_VAR=3
     init_x = np.array([sd_dist, 1.0, 1.0, mean_dist])
+    EPS = 1e-8
     lower = np.array(
         [
             1e-8 * sd_dist,
-            -np.pi,
-            1e-8,
+            -np.pi+EPS,
+            EPS,
             -100 * sd_dist,
         ]
     )
-    upper = np.array([10 * sd_dist, np.pi, 1000, 100 * sd_dist])
+    upper = np.array([10 * sd_dist, np.pi-EPS, 1000, 100 * sd_dist])
 
     # NLopt function must return a gradient even if algorithm is derivative-free
     # - this function will return an empty gradient
