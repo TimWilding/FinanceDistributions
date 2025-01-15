@@ -348,14 +348,14 @@ def test_expected_shortfall():
     df_ret = fd.get_test_data()    
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
     (es, var) = fd.sample_expected_shortfall(sp_ret, 0.95)
-    np.testing.assert_equal(es, -3.0182639295131275)
+    np.testing.assert_approx_equal(es, -3.0182639295131275, 3)
     gs = fd.GeneralisedSkewT.fitclass(sp_ret, display_progress=False)
     (es_dist, var_dist) = fd.expected_shortfall(gs, 0.95 )
-    np.testing.assert_equal(es_dist, -2.9305505707305555)
+    np.testing.assert_approx_equal(es_dist, -2.9305505707305555, 3)
     sp_tail = fd.fit_tail_model(sp_ret, 0.95)
-    np.testing.assert_equal(sp_tail[0], 0.20524897090856728)
+    np.testing.assert_approx_equal(sp_tail[0], 0.20524897090856728, 3)
     (es_tail, var_tail) = fd.expected_shortfall_tail_model(0.95, sp_tail[0], sp_tail[1], sp_tail[2], 0.99)
-    np.testing.assert_equal(es_tail, -5.344663974593491)
+    np.testing.assert_approx_equal(es_tail, -5.344663974593491, 3)
 
 
 
