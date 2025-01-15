@@ -341,6 +341,24 @@ def test_black_litterman():
 
     np.testing.assert_allclose(w_opt, ans_opt, rtol=1e-6)
 
+def test_expected_shortfall():
+    """
+    Test the expected shortfall statistics
+    """
+    df_ret = fd.get_test_data()    
+    sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
+    (es, var) = fd.sample_expected_shortfall(sp_ret, 0.95)
+    np.testing.assert_equal(es, -3.0182639295131275)
+    gs = fd.GeneralisedSkewT.fitclass(sp_ret, display_progress=False)
+    (es_dist, var_dist) = fd.expected_shortfall(gs, 0.95 )
+    np.testing.assert_equal(es_dist, -2.9305505707305555)
+    sp_tail = fd.fit_tail_model(sp_ret, 0.95)
+    np.testing.assert_equal(sp_tail[0], 0.20524897090856728)
+    (es_tail, var_tail) = fd.expected_shortfall_tail_model(0.95, sp_tail[0], sp_tail[1], sp_tail[2], 0.99)
+    np.testing.assert_equal(es_tail, -5.344663974593491)
+
+
+
 
 
 if __name__ == "__main__":

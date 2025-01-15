@@ -71,3 +71,9 @@ from FastDistributions.perf_stats import (
     probabilistic_sharpe_ratio,
     omega_ratio,
 )
+from FastDistributions.tail_stats import (
+    sample_expected_shortfall,
+    expected_shortfall,
+    fit_tail_model,
+    expected_shortfall_tail_model,
+)
