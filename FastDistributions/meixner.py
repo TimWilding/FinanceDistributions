@@ -49,6 +49,9 @@ def meixner_loglikelihood(
     )
     log_exp_factor = beta * (x - μ) / alpha
     arg = delta + 1j * (x - μ) / alpha
+    # the mpmath gamma function can 
+    # calculate gamma to a higher precision
+    # it may be worth switching here.
     log_gamma_term = 2 * np.log(
 #        np.abs(gamma(arg))
         np.maximum(np.abs(gamma(arg)), 1e-300)
@@ -191,7 +194,15 @@ class Meixner(rv_continuous):
         self.mu = loc
 
     def _pdf(self, x):
-        return np.exp(self._logpdf(x))
+        pd = np.exp(self._logpdf(x))
+        if isinstance(pd, (float, np.float64)):
+        # Handle single float
+            return 0.0 if np.isnan(pd) else pd
+        elif isinstance(pd, np.ndarray):
+        # Handle numpy array
+            return np.nan_to_num(pd, nan=0.0)
+        else:
+            raise TypeError('Must be a float or numpy array')
 
     def _logpdf(self, x):
         return meixner_loglikelihood(x, self.alpha, self.beta, self.delta, self.mu)
