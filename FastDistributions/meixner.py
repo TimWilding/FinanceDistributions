@@ -217,6 +217,10 @@ class Meixner(rv_continuous):
     def _mean(self):
         mean = self.mu + self.alpha * self.delta * np.tan(self.beta / 2)
         return mean
+    
+    def _stats(self):
+        return _basestats(self)
+
 
     #    def grad_pdf(self, x):
     #        return meixner_log_pdf_gradient(x, self.alpha, self.beta, self.delta, self.mu)#

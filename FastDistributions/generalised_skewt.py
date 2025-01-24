@@ -8,6 +8,7 @@ import numpy as np
 import pybobyqa
 from scipy.special import gamma, loggamma, beta
 from scipy.stats import uniform, rv_continuous, FitError
+from stat_functions import _basestats
 
 LOC_VAR = 0
 SCALE_VAR = 1
@@ -134,7 +135,10 @@ class GeneralisedSkewT(rv_continuous):
             self.ƛ * v * gamma(2 * p_inv) * gamma(q - p_inv) / gamma(p_inv) / gamma(q)
         )
         return self.μ + lam_adj * self.σ
-
+    
+    def _stats(self):
+        return _basestats(self)
+    
     def qtile(self, prob):
         p = self.k
         q = self.n / self.k

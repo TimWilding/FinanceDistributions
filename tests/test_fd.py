@@ -10,6 +10,7 @@ from pandas import read_csv
 import matplotlib.pyplot as plt
 import seaborn as sns
 import FastDistributions as fd
+from stat_functions import _basestats
 
 
 def plot_stats_col(df, col_name, axis_label, chart_title, id_field="Identifier"):
@@ -356,6 +357,41 @@ def test_expected_shortfall():
     np.testing.assert_approx_equal(sp_tail[0], 0.20524897090856728, 3)
     (es_tail, var_tail) = fd.expected_shortfall_tail_model(0.95, sp_tail[0], sp_tail[1], sp_tail[2], 0.99)
     np.testing.assert_approx_equal(es_tail, -5.344663974593491, 3)
+
+
+def test_fit_johnson():
+
+    def pdf_su_shape(x, gamma, delta):
+       return fd.JohnsonSU(gamma, delta, 0, 1.0).pdf(x)
+
+    lst_dist = {
+        "gamma = -1.1, delta = 1.5": [lambda x : pdf_su_shape(x, -1.1, 1.5), "r--"],
+        "gamma = -1.1, delta = 0.8": [lambda x : pdf_su_shape(x, -1.1, 0.8), "b--"],
+        "gamma = 0.5, delta = 0.8": [lambda x : pdf_su_shape(x, 0.5, 0.8), "g--"],
+        "gamma = 0.5, delta = 0.05": [lambda x : pdf_su_shape(x, 0.5, 0.05), "k--"],
+        "gamma = 0.0, delta = 0.1": [lambda x : pdf_su_shape(x, 0.0, 0.1), "y--"],        
+        "Normal": [lambda x : norm.pdf(x), "k-"],
+    }
+    fd.plot_multi_function(lst_dist, y_label='Probability Density',
+                   x_lim=[-10.0, 10.0], y_log_scale=False, title='Johnson S_U Distribution')
+    df_ret = fd.get_test_data()
+    sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
+    jsu_fit = fd.JohnsonSU.fitclass(sp_ret)
+    print(jsu_fit.std())
+    (x_vals, x_wts) = fd.gauss_legendre_sample(1000)
+    mean = jsu_fit.mean()
+    sd = jsu_fit.std()
+    mean_est = np.sum(x_wts * jsu_fit.pdf(x_vals) * x_vals) # Use numerical integration to test the mean of the distribution
+    sd_est = np.sqrt(np.sum(x_wts*jsu_fit.pdf(x_vals)*x_vals**2) - mean_est*mean_est)
+    np.testing.assert_approx_equal(mean, mean_est, 1e-6)
+    np.testing.assert_approx_equal(sd, sd_est, 1e-6)
+    norm_mod = norm.fit(sp_ret)
+    norm_fit = norm(norm_mod[0], norm_mod[1])
+    dict_pdf = {
+        "Normal Distribution":   [norm_fit.pdf, "b-"],
+        "Johnson SU Distribution": [jsu_fit.pdf, "y-"],
+    }
+    fd.plot_hist_fit(sp_ret, "SP 500", dict_pdf, 50, log_scale=True)
 
 
 

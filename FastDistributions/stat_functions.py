@@ -209,3 +209,13 @@ def rolling_backtest(
         sample_freq=sample_freq,
         skip_periods=skip_periods,
     )
+
+
+def _basestats(self):
+        # Return mean, variance, skewness, and kurtosis analytically
+        mean = self._mean()
+        variance = self._var()
+        # Johnson SU skew and kurtosis are complex; you can use numerical methods
+        skew = None
+        kurt = None
+        return mean, variance, skew, kurt
