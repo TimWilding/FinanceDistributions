@@ -2,7 +2,7 @@ import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from dist_plots import plot_multi_function
-from stat_functions import _basestats
+from .stat_functions import _basestats
 
 
 def log_pdf_johnson_sb(x, gamma, delta, xi, lambd):

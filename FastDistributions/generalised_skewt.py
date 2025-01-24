@@ -8,7 +8,7 @@ import numpy as np
 import pybobyqa
 from scipy.special import gamma, loggamma, beta
 from scipy.stats import uniform, rv_continuous, FitError
-from stat_functions import _basestats
+from .stat_functions import _basestats
 
 LOC_VAR = 0
 SCALE_VAR = 1

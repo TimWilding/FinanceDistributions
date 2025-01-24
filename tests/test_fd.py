@@ -10,7 +10,7 @@ from pandas import read_csv
 import matplotlib.pyplot as plt
 import seaborn as sns
 import FastDistributions as fd
-from stat_functions import _basestats
+
 
 
 def plot_stats_col(df, col_name, axis_label, chart_title, id_field="Identifier"):

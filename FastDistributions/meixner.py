@@ -11,7 +11,7 @@ import numpy as np
 import pybobyqa
 from scipy.stats import uniform, rv_continuous, FitError
 from scipy.special import gamma, gammaln, psi, polygamma
-from stat_functions import _basestats
+from .stat_functions import _basestats
 
 LOC_VAR = 3
 SCALE_VAR = 0
