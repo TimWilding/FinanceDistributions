@@ -315,7 +315,7 @@ def _meixner_fit(returns_data, prob=None, display_progress=True):
         )
     )
     if display_progress:
-        print("Fitting Generalised Skew-T Distribution")
+        print("Fitting Meixner Distribution")
         print("=======================================")
         print("Initial Log Likelihood")
         print(ll_func(init_x))
@@ -333,5 +333,5 @@ def _meixner_fit(returns_data, prob=None, display_progress=True):
         raise ValueError("input value problem in fitting routine")
     if (soln.flag < soln.EXIT_SUCCESS) & (soln.flag != soln.EXIT_LINALG_ERROR):
         print(soln)
-        raise FitError("Fitting error in Generalised Skew-T fitting")
+        raise FitError("Fitting error in Meixner fitting")
     return soln
