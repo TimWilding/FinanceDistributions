@@ -60,16 +60,22 @@ def download_yahoo_returns(
     Takes the list of assets and downloads them from Yahoo Finance
     using the tickers - calculates daily returns, and adds a marker
     for weekly and monthly returns if you need to calculate those as well
-    Assets is a list of tuples like
+    
+    Assets - a list of tuples like
         [('^GSPC', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')]
-    The first entryof each tuple is the Yahoo ticker,
-    and the second entry is a long name
+        The first entryof each tuple is the Yahoo ticker,
+        and the second entry is a long name
 
-    Available download period parameters are:
+    download_period - Available download period parameters are:
         period =  1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
-    or you can specify start and end date:
+        or you can specify start and end date:
         start & end using 'YYYY-MM-DD' string
-
+    endweekday - the day of the week that you want to use as the end of the week 
+                0 = Monday, 1 = Tuesday, 2 = Wednesday, 3 = Thursday, 4 = Friday, 
+                5 = Saturday, 6 = Sunday, default is Wednesday
+                used in calculating weekly returns
+    price_field - 'Close' is the default, but you can use 'Adj Close' or 'Open' etc
+    
     Note that though yf can download multiple tickers
     the resultant dataframe is not arranged in a way that makes calculation
     of returns easy with a column for each ticker.
