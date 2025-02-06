@@ -22,6 +22,7 @@ def plot_hist_fit(
     nbins=20,
     log_scale=False,
     ylim=None,
+    xlim=None,
     xlabel="Log-Return",
     ax=None,
 ):
@@ -62,7 +63,7 @@ def plot_hist_fit(
     # Add labels and legend
     ax.set_xlabel(xlabel)
     ax.set_ylabel("Probability Density")
-    ax.set_title(f"{series_name} Histogram")
+    ax.set_title(f"{series_name}")
     ax.legend()
     if log_scale:
         ax.set_yscale("log")
@@ -70,6 +71,8 @@ def plot_hist_fit(
             ax.set_ylim([0.8 * y_min, 1.2 * y_max])
         else:
             ax.set_ylim(ylim)
+    if xlim is not None:
+        ax.set_xlim(xlim)
 
     # Show the plot
     if show:
@@ -204,7 +207,7 @@ def plot_multi_function(
     title="Function",
     x_label="x",
     y_label="y",
-    y_log_scale=False
+    y_log_scale=False,
 ):
     """
     Takes a function and produces a graph using the limits
@@ -239,7 +242,7 @@ def plot_multi_function(
         y_min = y_lim[0]
         y_max = y_lim[1]
     if y_log_scale:
-        plt.yscale('log')
+        plt.yscale("log")
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title)
@@ -291,7 +294,14 @@ def plot_function(
 
 
 def plot_qq(
-    data, series_name, dict_fn, nbins=500, show_45=True, xlim=None, show_labels=False
+    data,
+    series_name,
+    dict_fn,
+    nbins=500,
+    show_45=True,
+    xlim=None,
+    show_labels=False,
+    ax=None,
 ):
     """
     see https://en.wikipedia.org/wiki/Q%E2%80%93Q_plot
@@ -310,13 +320,20 @@ def plot_qq(
     data_pctiles = np.percentile(data, pctiles)
     x_min = np.min(data_pctiles)
     x_max = np.max(data_pctiles)
+
+    show = False
+    if ax is None:
+        plt.figure()
+        ax = plt.gca()
+        show = True
+
     for fn_name in dict_fn:
         fn_pctiles = dict_fn[fn_name][0](pctiles / 100.0)
         if np.min(fn_pctiles) < x_min:
             x_min = np.min(fn_pctiles)
         if np.max(fn_pctiles) > x_max:
             x_max = np.max(fn_pctiles)
-        plt.plot(
+        ax.plot(
             fn_pctiles,
             data_pctiles,
             dict_fn[fn_name][1],
@@ -328,7 +345,7 @@ def plot_qq(
             for i in range(nbins):
                 if xlim is None:
                     # Adjust fontsize and position as needed
-                    plt.text(
+                    ax.text(
                         data_pctiles[i],
                         fn_pctiles[i],
                         f"{pctiles[i]:0.2f}",
@@ -343,7 +360,7 @@ def plot_qq(
                         & (fn_pctiles[i] < xlim[1])
                         & (fn_pctiles[i] > xlim[0])
                     ):
-                        plt.text(
+                        ax.text(
                             fn_pctiles[i],
                             data_pctiles[i],
                             f"{pctiles[i]:0.2f}%",
@@ -356,18 +373,19 @@ def plot_qq(
     x_max = x_max + pad_val * (x_max - x_min)
     if show_45:
         sline = np.linspace(x_min, x_max, 100)
-        plt.plot(sline, sline, "k--")
-    plt.xlabel("Theoretical Percentiles")
-    plt.ylabel("Sample Percentiles")
-    plt.title(f"{series_name} Q-Q Plot")
+        ax.plot(sline, sline, "k--")
+    ax.set_xlabel("Theoretical Percentiles")
+    ax.set_ylabel("Sample Percentiles")
+    ax.set_title(f"{series_name} Q-Q Plot")
     if xlim is None:
-        plt.xlim([x_min, x_max])
-        plt.ylim([x_min, x_max])
+        ax.set_xlim([x_min, x_max])
+        ax.set_ylim([x_min, x_max])
     else:
-        plt.xlim(xlim)
-        plt.ylim(xlim)
-    plt.legend()
-    plt.show()
+        ax.set_xlim(xlim)
+        ax.set_ylim(xlim)
+    ax.legend()
+    if show:
+        plt.show()
 
 
 def _calc_cum_fn(ret_data):
