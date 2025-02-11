@@ -8,7 +8,10 @@ unbounded version of the Johnson SB distribution.
 import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
+from scipy.special import erf
 from .stat_functions import _basestats
+from typing import Any
+
 
 
 def log_pdf_johnson_sb(x, gamma, delta, xi, lambd):
@@ -126,6 +129,13 @@ class JohnsonSU(rv_continuous):
         m = np.exp(0.5 / self.delta**2)
         mean = self.xi - self.lambd * m * np.sinh(self.gamma / self.delta)
         return mean
+    
+    def _cdf(self:Any, x: Any) -> Any:
+        z = (x - self.xi) / self.lambd
+        sinh_inv = np.arcsinh(z)
+        transformed = self.gamma + self.delta * sinh_inv
+        cdf = 0.5 * (1 + erf(transformed / np.sqrt(2)))
+        return cdf        
 
     def _stats(self):
         return _basestats(self)

@@ -6,6 +6,7 @@ from multiprocessing.pool import ThreadPool
 import time
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
+from scipy.stats import rv_continuous
 import pandas as pd
 import numpy as np
 
@@ -219,3 +220,61 @@ def _basestats(self):
         skew = None
         kurt = None
         return mean, variance, skew, kurt
+        
+def edf_stats(x, dist: rv_continuous):
+    """
+    Empirical Distribution Function statistics for distribution testing. 
+    Returns a variety of statistics comparing the empirical distribution
+    function with the theoretical distribution.
+
+    Parameters
+    ----------
+    x : array_like
+        Array of sample data.
+    dist : rv continuos derived class
+
+    Returns
+    -------
+    result : 
+    A2 : Anderson-Darling Statistic
+    W2: Cramer-Von Mises Statistic
+    K: Kolgomorov-Smirnov Statistic
+    U2: Watson Statistic
+    V: Kuiper Statistic
+     
+    See Also
+    --------
+    kstest : The Kolmogorov-Smirnov test for goodness-of-fit.
+
+    Notes
+    -----
+    No critical values provided currently
+    Examples
+    --------
+    Test the null hypothesis that a random sample was drawn from a particular
+    distribution (with unspecified mean and standard deviation).
+
+    Note should fit the distribution and calculate the critical values
+    accordingly
+
+
+    """ # numpy/numpydoc#87  # noqa: E501
+    y = np.sort(x)
+    N = len(y)
+    cdf = dist.cdf(y)
+    eps = 1e-15
+    logcdf = np.log(np.maximum(cdf, eps))
+    cdf_mean = np.sum(cdf) / N
+    logsf = np.log(np.maximum(1-cdf, eps)) # log of survival function
+    i = np.arange(1, N + 1)
+    A2 = -N - np.sum((2*i - 1.0) / N * (logcdf + logsf[::-1]), axis=0) # Anderson-Darling 
+    W2 = np.sum((cdf - ((2*i - 1.0)/(2*N)))**2) + (1/(12*N)) # Cramer-Von Mises
+    U2 = W2 - N*(cdf_mean - 0.5)**2 # Watson
+    
+    # Kolmogorov-Smirnov style stats
+    D_plus = np.max(((i/N) - cdf))
+    D_minus = np.max((cdf - ((i-1)/N)))
+
+    V = D_plus + D_minus # Kuiper
+    K = max(D_plus, D_minus) # Kolgomorov-Smirnov
+    return A2, W2, K, U2, V

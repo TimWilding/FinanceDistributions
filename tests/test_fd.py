@@ -9,8 +9,8 @@ from scipy.stats import norm
 from pandas import read_csv
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.integrate import quad
 import FastDistributions as fd
-
 
 
 def plot_stats_col(df, col_name, axis_label, chart_title, id_field="Identifier"):
@@ -68,7 +68,7 @@ def test_priips():
     df_price_history = df_price_history[
         df_price_history["Ticker"].isin(["^AEX", "^FTSE", "^N225", "^GSPC"])
     ]
-    
+
     df_sample_5y = df_price_history[
         (df_price_history.Date > datetime.datetime(2018, 10, 27))
         & (df_price_history.Date < datetime.datetime(2023, 10, 27))
@@ -179,8 +179,8 @@ def test_robust_correl():
     df_prices = fd.get_test_data(5)
     pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
-    (samp_ave, samp_covar, nu, _) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
-    samp_corr = fd.corr_conv(samp_covar)
+    (_, samp_covar, nu, _) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
+    _ = fd.corr_conv(samp_covar)
     (_, norm_cov, _, _) = fd.TDist.em_fit(pivot_df.values, dof=1000)
     norm_corr = fd.corr_conv(norm_cov)
     act_corr = pivot_df.corr()
@@ -213,6 +213,7 @@ def test_dists():
     gsd = fd.GeneralisedSkewT(0, 1.0, 0.2, 1, 1000)
     gsd_skew = fd.GeneralisedSkewT(0, 1.0, 0.2, 2.0, 1000)
     print(gsd.pdf(-1.0))
+    print(gsd_skew.pdf(-1.0))
     # lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225"), ('WFBIX', 'US Aggregate Bond Index')]
     df_ret = fd.get_test_data()
 
@@ -222,7 +223,6 @@ def test_dists():
     gs_fit = fd.GeneralisedSkewT.fitclass(sp_ret)
     ent_fit = fd.EntropyDistribution.fitclass(sp_ret)
     mei_fit = fd.Meixner.fitclass(sp_ret)
-
 
     norm_mod = norm.fit(sp_ret)
     norm_fit = norm(norm_mod[0], norm_mod[1])
@@ -250,17 +250,20 @@ def test_dists():
         "Generalised SkewT": [gs_fit.ppf, "go"],
         "Entropy Distribution": [ent_fit.ppf, "ro"],
         "Meixner Distribution": [mei_fit.ppf, "yo"],
-        }
+    }
     fd.plot_qq(sp_ret, "SP500 Returns", dict_ppf, nbins=500)
 
     print("Finished testing")
 
 
 def test_cached_read():
-    df_prices = fd.read_cached_excel('https://www.eurekahedge.com/Indices/ExportIndexReturnsToExcel?IndexType=Eurekahedge&IndexId=640', header=3)
-    df_prices['LogReturn'] = np.log((100 + df_prices['PercentReturn'])/100)
+    df_prices = fd.read_cached_excel(
+        "https://www.eurekahedge.com/Indices/ExportIndexReturnsToExcel?IndexType=Eurekahedge&IndexId=640",
+        header=3,
+    )
+    df_prices["LogReturn"] = np.log((100 + df_prices["PercentReturn"]) / 100)
     df_prices = df_prices.dropna()
-    print(fd.probabilistic_sharpe_ratio(df_prices['LogReturn'].values))
+    print(fd.probabilistic_sharpe_ratio(df_prices["LogReturn"].values))
     print("Finished testing cached Excel read")
 
 
@@ -271,109 +274,174 @@ def test_regress():
     df = fd.sample_regress(pivot_df, "SP 500", True, True)
     print("Finished testing regression")
 
+
 def test_risk_parity():
     """This is a test on a known problem"""
-    sigma = np.vstack([np.array((1.0000, 0.0015, -0.0119)),
-                   np.array((0.0015, 1.0000, -0.0308)),
-                   np.array((-0.0119, -0.0308, 1.0000))])
+    sigma = np.vstack(
+        [
+            np.array((1.0000, 0.0015, -0.0119)),
+            np.array((0.0015, 1.0000, -0.0308)),
+            np.array((-0.0119, -0.0308, 1.0000)),
+        ]
+    )
     risk_budget = np.array((0.1594, 0.0126, 0.8280))
     ans = np.array([0.2798628, 0.08774909, 0.63238811])
-    rpp = fd.get_risk_parity_pf(sigma,
-                                risk_budgets=risk_budget)
+    rpp = fd.get_risk_parity_pf(sigma, risk_budgets=risk_budget)
     np.testing.assert_allclose(rpp, ans, rtol=1e-4)
     # assert rpp.risk_concentration.evaluate() < 1e-9
 
 
-
 def test_black_litterman():
     # Data given in He & Litterman 1999 for illustrative calculations
-    lst_countries =['Australia','Canada','France','Germany','Japan','UK','USA']
+    lst_countries = ["Australia", "Canada", "France", "Germany", "Japan", "UK", "USA"]
 
-# Table 1 - Correlations
-    correl_hel = np.array([[1, 0.488, 0.478, 0.515, 0.439, 0.512, 0.491],
-                       [0.488, 1, 0.664, 0.655, 0.31, 0.608, 0.779],
-                       [0.478, 0.664, 1, 0.861, 0.355, 0.783, 0.668],
-                       [0.515, 0.655, 0.861, 1, 0.354, 0.777, 0.653],
-                       [0.439, 0.31, 0.355, 0.354, 1, 0.405, 0.306],
-                       [0.512, 0.608, 0.783, 0.777, 0.405, 1, 0.652],
-                       [0.491, 0.779, 0.668, 0.653, 0.306, 0.652, 1]])
+    # Table 1 - Correlations
+    correl_hel = np.array(
+        [
+            [1, 0.488, 0.478, 0.515, 0.439, 0.512, 0.491],
+            [0.488, 1, 0.664, 0.655, 0.31, 0.608, 0.779],
+            [0.478, 0.664, 1, 0.861, 0.355, 0.783, 0.668],
+            [0.515, 0.655, 0.861, 1, 0.354, 0.777, 0.653],
+            [0.439, 0.31, 0.355, 0.354, 1, 0.405, 0.306],
+            [0.512, 0.608, 0.783, 0.777, 0.405, 1, 0.652],
+            [0.491, 0.779, 0.668, 0.653, 0.306, 0.652, 1],
+        ]
+    )
 
-# Table 2 - volatilities and market cap weights
-    sigma_hel = np.array([16, 20.3, 24.8, 27.1, 21, 20, 18.7])/100
-    w_hel = np.array([1.6, 2.2, 5.2, 5.5, 11.6, 12.4, 61.5])/100
+    # Table 2 - volatilities and market cap weights
+    sigma_hel = np.array([16, 20.3, 24.8, 27.1, 21, 20, 18.7]) / 100
+    w_hel = np.array([1.6, 2.2, 5.2, 5.5, 11.6, 12.4, 61.5]) / 100
 
-# View Portfolios
-    P = np.array([[0.0, 0.0,   -29.5, 100.0, 0.0, -70.5, 0.0],
-                 [0.0, 100.0, 0.0, 0.0,   0.0, 0.0, -100.0]])/100
+    # View Portfolios
+    P = (
+        np.array(
+            [
+                [0.0, 0.0, -29.5, 100.0, 0.0, -70.5, 0.0],
+                [0.0, 100.0, 0.0, 0.0, 0.0, 0.0, -100.0],
+            ]
+        )
+        / 100
+    )
 
-
-# Calculate the covariance matrix from the data
+    # Calculate the covariance matrix from the data
     cov_hel = fd.cov_from_correl(correl_hel, sigma_hel)
 
-# Calculate the equilibrium returns from the equilibrium weights and the covariance
-# matrix
+    # Calculate the equilibrium returns from the equilibrium weights and the covariance
+    # matrix
     delta = 2.5
     tau_hel = 0.05
-    q = np.array([5, 3])/100
-    Omega = np.array([[0.021, 0.0], 
-                      [0.0, 0.017]])*tau_hel
-    pi = fd.reverse_optimise(w_hel, cov_hel, delta) # calculate equilibrium returns
+    q = np.array([5, 3]) / 100
+    Omega = np.array([[0.021, 0.0], [0.0, 0.017]]) * tau_hel
+    pi = fd.reverse_optimise(w_hel, cov_hel, delta)  # calculate equilibrium returns
     print(pi)
-    pi_hat, sigma_hat = fd.black_litterman_stats(w_hel, cov_hel, P, q, Omega, tau_hel, delta, True)
+    pi_hat, sigma_hat = fd.black_litterman_stats(
+        w_hel, cov_hel, P, q, Omega, tau_hel, delta, True
+    )
 
     w_opt = fd.unconstrained_optimal_portfolio(sigma_hat, pi_hat, delta)
     print("Revised Optimal Portfolio")
     print(w_opt)
     print("Change from Original")
-    print(w_opt - (w_hel/ (1 + tau_hel)))
-    lam, dlam_dq = fd.he_litterman_lambda(w_hel, cov_hel, P, q, Omega, tau_hel, delta, True)
-    print('Lambda')
+    print(w_opt - (w_hel / (1 + tau_hel)))
+    lam, dlam_dq = fd.he_litterman_lambda(
+        w_hel, cov_hel, P, q, Omega, tau_hel, delta, True
+    )
+    print("Lambda")
     print(lam)
-    print('dlamdq')
-    print(dlam_dq) 
-    print('Fusai-Meucci Consistency')
-    print(fd.fusai_meucci_consistency(pi_hat, pi, tau_hel*cov_hel, P, Omega))
-    print('Theils View Compatibility')
-    print(fd.theils_view_compatibility(q, pi, tau_hel*cov_hel, P, Omega))
+    print("dlamdq")
+    print(dlam_dq)
+    print("Fusai-Meucci Consistency")
+    print(fd.fusai_meucci_consistency(pi_hat, pi, tau_hel * cov_hel, P, Omega))
+    print("Theils View Compatibility")
+    print(fd.theils_view_compatibility(q, pi, tau_hel * cov_hel, P, Omega))
     te, dtedq = fd.braga_natale_measure(w_hel, cov_hel, P, q, Omega, tau_hel, delta)
-    print('Braga Natale measure = tracking error = {0:5.2f}%'.format(te))
-    print(dtedq)   
-    ans_opt = np.array([0.0152381, 0.41893107, -0.03471219, 0.33792671, 0.11047619, -0.08321452, 0.1877356])
+    print("Braga Natale measure = tracking error = {0:5.2f}%".format(te))
+    print(dtedq)
+    ans_opt = np.array(
+        [
+            0.0152381,
+            0.41893107,
+            -0.03471219,
+            0.33792671,
+            0.11047619,
+            -0.08321452,
+            0.1877356,
+        ]
+    )
 
     np.testing.assert_allclose(w_opt, ans_opt, rtol=1e-6)
+
 
 def test_expected_shortfall():
     """
     Test the expected shortfall statistics
     """
-    df_ret = fd.get_test_data()    
+    df_ret = fd.get_test_data()
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
     (es, var) = fd.sample_expected_shortfall(sp_ret, 0.95)
     np.testing.assert_approx_equal(es, -3.0182639295131275, 3)
     gs = fd.GeneralisedSkewT.fitclass(sp_ret, display_progress=False)
-    (es_dist, var_dist) = fd.expected_shortfall(gs, 0.95 )
+    (es_dist, var_dist) = fd.expected_shortfall(gs, 0.95)
     np.testing.assert_approx_equal(es_dist, -2.9305505707305555, 3)
     sp_tail = fd.fit_tail_model(sp_ret, 0.95)
     np.testing.assert_approx_equal(sp_tail[0], 0.20524897090856728, 3)
-    (es_tail, var_tail) = fd.expected_shortfall_tail_model(0.95, sp_tail[0], sp_tail[1], sp_tail[2], 0.99)
+    (es_tail, var_tail) = fd.expected_shortfall_tail_model(
+        0.95, sp_tail[0], sp_tail[1], sp_tail[2], 0.99
+    )
     np.testing.assert_approx_equal(es_tail, -5.344663974593491, 3)
 
 
 def test_fit_johnson():
 
     def pdf_su_shape(x, gamma, delta):
-       return fd.JohnsonSU(gamma, delta, 0, 1.0).pdf(x)
+        return fd.JohnsonSU(gamma, delta, 0, 1.0).pdf(x)
 
     lst_dist = {
-        "gamma = -1.1, delta = 1.5": [lambda x : pdf_su_shape(x, -1.1, 1.5), "r--"],
-        "gamma = -1.1, delta = 0.8": [lambda x : pdf_su_shape(x, -1.1, 0.8), "b--"],
-        "gamma = 0.5, delta = 0.8": [lambda x : pdf_su_shape(x, 0.5, 0.8), "g--"],
-        "gamma = 0.5, delta = 0.05": [lambda x : pdf_su_shape(x, 0.5, 0.05), "k--"],
-        "gamma = 0.0, delta = 0.1": [lambda x : pdf_su_shape(x, 0.0, 0.1), "y--"],        
-        "Normal": [lambda x : norm.pdf(x), "k-"],
+        "gamma = -1.1, delta = 1.5": [lambda x: pdf_su_shape(x, -1.1, 1.5), "r--"],
+        "gamma = -1.1, delta = 0.8": [lambda x: pdf_su_shape(x, -1.1, 0.8), "b--"],
+        "gamma = 0.5, delta = 0.8": [lambda x: pdf_su_shape(x, 0.5, 0.8), "g--"],
+        "gamma = 0.5, delta = 0.05": [lambda x: pdf_su_shape(x, 0.5, 0.05), "k--"],
+        "gamma = 0.0, delta = 0.1": [lambda x: pdf_su_shape(x, 0.0, 0.1), "y--"],
+        "Normal": [lambda x: norm.pdf(x), "k-"],
     }
-    fd.plot_multi_function(lst_dist, y_label='Probability Density',
-                   x_lim=[-10.0, 10.0], y_log_scale=False, title='Johnson S_U Distribution')
+    fd.plot_multi_function(
+        lst_dist,
+        y_label="Probability Density",
+        x_lim=[-10.0, 10.0],
+        y_log_scale=False,
+        title="Johnson S_U Distribution",
+    )
+    def cdf_su_shape(x, gamma, delta):
+        return fd.JohnsonSU(gamma, delta, 0, 1.0).cdf(x)
+    
+    lst_dist = {
+        "gamma = -1.1, delta = 1.5": [lambda x: cdf_su_shape(x, -1.1, 1.5), "r--"],
+        "gamma = -1.1, delta = 0.8": [lambda x: cdf_su_shape(x, -1.1, 0.8), "b--"],
+        "gamma = 0.5, delta = 0.8": [lambda x: cdf_su_shape(x, 0.5, 0.8), "g--"],
+        "gamma = 0.5, delta = 0.05": [lambda x: cdf_su_shape(x, 0.5, 0.05), "k--"],
+        "gamma = 0.0, delta = 0.1": [lambda x: cdf_su_shape(x, 0.0, 0.1), "y--"],
+        "Normal": [lambda x: norm.cdf(x), "k-"],
+    }
+    fd.plot_multi_function(
+        lst_dist,
+        y_label="Cumulative Density",
+        x_lim=[-10.0, 10.0],
+        y_log_scale=False,
+        title="Johnson S_U Distribution",
+    )
+
+    jsu = fd.JohnsonSU(0.5, 0.05, 0, 1.0)
+    TEST_VAL = 3
+    cdf = jsu.cdf(TEST_VAL)
+    cdf_approx = quad(lambda x: jsu.pdf(x), -np.inf, TEST_VAL)[0]
+    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
+
+    jsu = fd.JohnsonSU(-1.1, 0.8, 0, 1.0)
+    TEST_VAL = 0.5
+    cdf = jsu.cdf(TEST_VAL)
+    cdf_approx = quad(lambda x: jsu.pdf(x), -np.inf, TEST_VAL)[0]
+    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
+
     df_ret = fd.get_test_data()
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
     jsu_fit = fd.JohnsonSU.fitclass(sp_ret)
@@ -381,18 +449,23 @@ def test_fit_johnson():
     (x_vals, x_wts) = fd.gauss_legendre_sample(1000)
     mean = jsu_fit.mean()
     sd = jsu_fit.std()
-    mean_est = np.sum(x_wts * jsu_fit.pdf(x_vals) * x_vals) # Use numerical integration to test the mean of the distribution
-    sd_est = np.sqrt(np.sum(x_wts*jsu_fit.pdf(x_vals)*x_vals**2) - mean_est*mean_est)
+    mean_est = np.sum(
+        x_wts * jsu_fit.pdf(x_vals) * x_vals
+    )  # Use numerical integration to test the mean of the distribution
+    sd_est = np.sqrt(
+        np.sum(x_wts * jsu_fit.pdf(x_vals) * x_vals**2) - mean_est * mean_est
+    )
     np.testing.assert_approx_equal(mean, mean_est, 1e-6)
     np.testing.assert_approx_equal(sd, sd_est, 1e-6)
     norm_mod = norm.fit(sp_ret)
     norm_fit = norm(norm_mod[0], norm_mod[1])
     dict_pdf = {
-        "Normal Distribution":   [norm_fit.pdf, "b-"],
+        "Normal Distribution": [norm_fit.pdf, "b-"],
         "Johnson SU Distribution": [jsu_fit.pdf, "y-"],
     }
     fd.plot_hist_fit(sp_ret, "SP 500", dict_pdf, 50, log_scale=True)
-
+    s = fd.edf_stats(sp_ret, jsu_fit)
+    print(s)
 
 
 

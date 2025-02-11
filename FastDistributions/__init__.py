@@ -3,7 +3,7 @@ from FastDistributions.levy_stable import LevyStableInterp
 from FastDistributions.meixner import Meixner
 from FastDistributions.johnson_dists import JohnsonSU
 from FastDistributions.entropy_distribution import (
-    EntropyDistribution, 
+    EntropyDistribution,
     EntropyDistFit,
     gauss_legendre_sample,
     vandermonde_matrix,
@@ -46,6 +46,7 @@ from FastDistributions.stat_functions import (
     parallel_bootstrap,
     rolling_backtest,
     rolling_backtest_date_function,
+    edf_stats,
 )
 from FastDistributions.regress_calcs import sample_regress
 from FastDistributions.allocation_recipes import (
