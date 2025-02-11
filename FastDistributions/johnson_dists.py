@@ -5,13 +5,13 @@ defined by four parameters. The distribution is a transformed version of the Nor
 distribution using an arcsinh transformation. The Johnson SU distribution is an 
 unbounded version of the Johnson SB distribution. 
 """
+
 import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import erf
-from .stat_functions import _basestats
 from typing import Any
-
+from .stat_functions import _basestats
 
 
 def log_pdf_johnson_sb(x, gamma, delta, xi, lambd):
@@ -129,23 +129,44 @@ class JohnsonSU(rv_continuous):
         m = np.exp(0.5 / self.delta**2)
         mean = self.xi - self.lambd * m * np.sinh(self.gamma / self.delta)
         return mean
-    
-    def _cdf(self:Any, x: Any) -> Any:
+
+    def _cdf(self: Any, x: Any) -> Any:
         z = (x - self.xi) / self.lambd
         sinh_inv = np.arcsinh(z)
         transformed = self.gamma + self.delta * sinh_inv
         cdf = 0.5 * (1 + erf(transformed / np.sqrt(2)))
-        return cdf        
+        return cdf
 
     def _stats(self):
         return _basestats(self)
 
     @staticmethod
     def fit(returns_data, prob=None, display_progress=True):
+        # TODO: change the name of this function since fit is a method of the class
+        """
+        Fit a Johnson SU distribution to a set of data sets with weights
+        Uses the BOBYQA algorithm of Powell.
+        Parameters:
+            returns_data (np.ndarray): Data to fit the distribution to
+            prob (np.ndarray): Weights for the data
+            display_progress (bool): Whether to display progress
+        Returns:
+            JohnsonSU: Tuple contining parameters for Johnson SU distribution
+        """
         return _johnson_su_fit(returns_data, prob, display_progress)
 
     @staticmethod
     def fitclass(returns_data, prob=None, display_progress=True):
+        """
+        Fit a Johnson SU distribution to a set of data sets with weights
+        Uses the BOBYQA algorithm of Powell.
+        Parameters:
+            returns_data (np.ndarray): Data to fit the distribution to
+            prob (np.ndarray): Weights for the data
+            display_progress (bool): Whether to display progress
+        Returns:
+            JohnsonSU: Instance of JohnsonSU class fitted to the data
+        """
         sol = _johnson_su_fit(returns_data, prob, display_progress)
         return JohnsonSU(sol.x[0], sol.x[1], sol.x[2], sol.x[3])
 
@@ -178,11 +199,11 @@ def _johnson_su_fit(returns_data, prob=None, display_progress=True):
             sd_dist,
         ]
     )
-    EPS = 1e-8
+    eps = 1e-8
     lower = np.array(
         [
             -10,
-            EPS,
+            eps,
             -100 * sd_dist,
             1e-8 * sd_dist,
         ]
@@ -196,25 +217,26 @@ def _johnson_su_fit(returns_data, prob=None, display_progress=True):
         ]
     )
 
-    # NLopt function must return a gradient even if algorithm is derivative-free
-    # - this function will return an empty gradient
-    ll_func = lambda x: -np.sum(
-        wt_prob
-        * log_pdf_johnson_su(
-            returns_data,
-            x[0],
-            x[1],
-            x[2],
-            x[3],
+    def ll_func(x):
+        return -np.sum(
+               wt_prob
+               * log_pdf_johnson_su(
+               returns_data,
+               x[0],
+               x[1],
+               x[2],
+               x[3],
+            )
         )
-    )
+  
     if display_progress:
         print("Fitting Johnson SU Distribution")
         print("=======================================")
         print("Initial Log Likelihood")
         print(ll_func(init_x))
     soln = pybobyqa.solve(ll_func, init_x, bounds=(lower, upper))
-    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that ROUNDOFF_LIMITED results are usually useful so I'm going to assume they are
+    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that ROUNDOFF_LIMITED results
+    #  are usually useful so I'm going to assume they are
     #  print("")
     #  print("Solution xmin = %s" % str(soln.x))
     #  print("Objective value f(xmin) = %.10g" % (soln.fun))

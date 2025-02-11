@@ -7,10 +7,11 @@ of a polynomial function.
 """
 
 import numpy as np
+from typing import Any
 from scipy.special import roots_legendre
 from scipy.optimize import minimize, NonlinearConstraint, Bounds
 from scipy.stats import rv_continuous, FitError
-from typing import Any
+
 
 
 def gauss_legendre_sample(n):
@@ -31,8 +32,12 @@ def gauss_legendre_sample(n):
       x_wts:  numpy array containing weights for each point
     """
     t, w = roots_legendre(n)
-    x_transform = lambda t: t / (1 - t**2)
-    dxdt_inv = lambda t: (1 + t**2) / (1 - t**2) ** 2
+    # define x_transform and dxdt_inv
+    # x_transform converts -1 to +1 to -infinity to +infinity
+    def x_transform(t):
+        return t / (1 - t**2)
+    def dxdt_inv(t):
+        return (1 + t**2) / (1 - t**2) ** 2
     x_vals = x_transform(t)
     x_wts = w * dxdt_inv(t)
     return x_vals, x_wts
@@ -52,8 +57,8 @@ def vandermonde_matrix(x, m=4, k=0):
     Returns:
        A Vandermonde matrix.
     """
-    X = np.column_stack([x**i for i in range(k, m + 1)])
-    return X
+    van_mat = np.column_stack([x**i for i in range(k, m + 1)])
+    return van_mat
 
 
 def safe_log_likelihoods(ƛ, x_vals, max_val=100.0):
@@ -90,21 +95,13 @@ class EntropyDistribution(rv_continuous):
 
     def __init__(self, ƛ=None, n=200):
         self.ƛ = ƛ
-        (x, w) = self._calc_gauss_legendre_sample(n)
+        (x, w) = gauss_legendre_sample(n)
         self.x = x
         self.w = w
         self.prob_sum = 0.0
         self.prob_sum = np.log(np.sum(self.w * self._pdf(x)))
         self._calc_stats()
         super().__init__(self)
-
-    def _calc_gauss_legendre_sample(self, n):
-        t, w = roots_legendre(n)
-        x_transform = lambda t: t / (1 - t**2)
-        dxdt_inv = lambda t: (1 + t**2) / (1 - t**2) ** 2
-        x_vals = x_transform(t)
-        x_wts = w * dxdt_inv(t)
-        return x_vals, x_wts
 
     def _calc_stats(self):
         prob_vals = self._pdf(self.x)
@@ -283,27 +280,30 @@ class EntropyDistFit:
         pdf_vals = np.exp(ll)
         wt_s = np.sqrt(pdf_vals * self.x_wts)
         wt_g = self.v_xvals.T * wt_s
-        H = wt_g @ wt_g.T
-        return H * v
+        hess = wt_g @ wt_g.T
+        return hess * v
 
     def hessian(self, ƛ, lagrange, obj_factor):
+        """
+        Hessian of the Lagrangian function
+        """
         #
         # The callback for calculating the Hessian
         #
         m = ƛ.shape[0] - 1
-        objH = np.zeros((m + 1, m + 1))
+        obj_hess = np.zeros((m + 1, m + 1))
 
         ll = safe_log_likelihoods(ƛ, self.x_vals)
         pdf_vals = np.exp(ll)
         wt_s = np.sqrt(pdf_vals * self.x_wts)
         #       g = vandermonde_matrix(self.x_vals, m)
         wt_g = self.v_xvals.T * wt_s
-        conH = wt_g @ wt_g.T
+        con_hess = wt_g @ wt_g.T
 
-        H = obj_factor * objH + lagrange[0] * conH
+        hess = obj_factor * obj_hess + lagrange[0] * con_hess
         row, col = self.hessianstructure()
 
-        return H[row, col]
+        return hess[row, col]
 
 
 def _entropy_fit(

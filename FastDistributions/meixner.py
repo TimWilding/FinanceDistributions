@@ -50,11 +50,11 @@ def meixner_loglikelihood(
     )
     log_exp_factor = beta * (x - μ) / alpha
     arg = delta + 1j * (x - μ) / alpha
-    # the mpmath gamma function can 
+    # the mpmath gamma function can
     # calculate gamma to a higher precision
     # it may be worth switching here.
     log_gamma_term = 2 * np.log(
-#        np.abs(gamma(arg))
+        #        np.abs(gamma(arg))
         np.maximum(np.abs(gamma(arg)), 1e-300)
     )  # Log of the squared modulus of Gamma function
 
@@ -197,13 +197,13 @@ class Meixner(rv_continuous):
     def _pdf(self, x):
         pd = np.exp(self._logpdf(x))
         if isinstance(pd, (float, np.float64)):
-        # Handle single float
+            # Handle single float
             return 0.0 if np.isnan(pd) else pd
         elif isinstance(pd, np.ndarray):
-        # Handle numpy array
+            # Handle numpy array
             return np.nan_to_num(pd, nan=0.0)
         else:
-            raise TypeError('Must be a float or numpy array')
+            raise TypeError("Must be a float or numpy array")
 
     def _logpdf(self, x):
         return meixner_loglikelihood(x, self.alpha, self.beta, self.delta, self.mu)
@@ -218,10 +218,9 @@ class Meixner(rv_continuous):
     def _mean(self):
         mean = self.mu + self.alpha * self.delta * np.tan(self.beta / 2)
         return mean
-    
+
     def _stats(self):
         return _basestats(self)
-
 
     #    def grad_pdf(self, x):
     #        return meixner_log_pdf_gradient(x, self.alpha, self.beta, self.delta, self.mu)#
@@ -291,29 +290,31 @@ def _meixner_fit(returns_data, prob=None, display_progress=True):
     # Note that this assumes that
     # SCALE_VAR = 0, SKEW_VAR=1, SHAPE_VAR=2, and LOC_VAR=3
     init_x = np.array([sd_dist, 1.0, 1.0, mean_dist])
-    EPS = 1e-8
+    eps = 1e-8
     lower = np.array(
         [
             1e-8 * sd_dist,
-            -np.pi+EPS,
-            EPS,
+            -np.pi + eps,
+            eps,
             -100 * sd_dist,
         ]
     )
-    upper = np.array([10 * sd_dist, np.pi-EPS, 1000, 100 * sd_dist])
+    upper = np.array([10 * sd_dist, np.pi - eps, 1000, 100 * sd_dist])
 
     # NLopt function must return a gradient even if algorithm is derivative-free
     # - this function will return an empty gradient
-    ll_func = lambda x: -np.sum(
-        wt_prob
-        * meixner_loglikelihood(
-            returns_data,
-            x[SCALE_VAR],
-            x[SKEW_VAR],
-            x[SHAPE_VAR],
-            x[LOC_VAR],
+    def ll_func(x):
+        return -np.sum(
+            wt_prob
+            * meixner_loglikelihood(
+                returns_data,
+                x[SCALE_VAR],
+                x[SKEW_VAR],
+                x[SHAPE_VAR],
+                x[LOC_VAR],
+            )
         )
-    )
+
     if display_progress:
         print("Fitting Meixner Distribution")
         print("=======================================")
