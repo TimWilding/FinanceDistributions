@@ -36,28 +36,31 @@ def adjusted_correl(X, lag=1):
     """Calculate a revised estimate of the covariance matrix
     accounting for the correlationg at a lag. This code is very simple and
     doesn't account for any autocorrelation in the returns of a single
-    series. See Scholes & Williams 1977 for details of this method"""
+    series. See Scholes & Williams 1977 for details of this method
+
+    CONSIDER USING Kevin Sheppard's MFE TOOLBOX    
+    """
     T = X.shape[0]
     p = X.shape[1]
     corr_mat = 0.5 * np.eye(p)
     for i in range(p):
         Z = np.zeros((T - 2 * lag, 1 + 2 * lag))
 
-        Z[:, 0] = X[lag : T - lag, i]  # Synchronous returns of first index
+        Z[:, 0] = X[lag:(T - lag), i]  # Synchronous returns of first index
 
         for j in range(1, lag + 1):
-            Z[:, 2 * j - 1] = X[(lag + j) : (T - lag + j), i]  # j-lagged returns
-            Z[:, 2 * j] = X[(lag - j) : T - lag - j, i]  # j-leading returns
+            Z[:, 2 * j - 1] = X[(lag + j):(T - lag + j), i]  # j-lagged returns
+            Z[:, 2 * j] = X[(lag - j):(T - lag - j), i]  # j-leading returns
 
         # Fill in the lower-diagonal
         if i < p - 1:
-            Y = X[lag : T - lag, i + 1 :]
+            Y = X[lag:(T - lag), i + 1 :]
             _, B, _, _ = ols_regress(Y, Z)
             B_true = np.sum(B, axis=0)
             sig_y = np.std(Y, axis=0)
             sig_x = np.std(Z[:, 0])
             correl = sig_x * (B_true / sig_y)
-            corr_mat[i + 1 : p, i] = correl
+            corr_mat[(i + 1):p, i] = correl
     return nearest_pos_def(corr_mat + corr_mat.T)
 
 
@@ -139,11 +142,11 @@ def nearest_pos_def(A):
     # `spacing` will, for Gaussian random matrixes of small dimension, be on
     # othe order of 1e-16. In practice, both ways converge, as the unit test
     # below suggests.
-    I = np.eye(A.shape[0])
+    ident = np.eye(A.shape[0])
     k = 1
     while not isPD(A3):
         mineig = np.min(np.real(np.linalg.eigvals(A3)))
-        A3 += I * (-mineig * k**2 + spacing)
+        A3 += ident * (-mineig * k**2 + spacing)
         k += 1
 
     return A3
@@ -197,7 +200,7 @@ def mahal_dist(samp_ave, samp_covar, returns_data):
     log_cov_det - log of the determinant of covariance
                   matrix
     """
-    (_, w, VT) = np.linalg.svd(samp_covar)
+    (_, w, vt) = np.linalg.svd(samp_covar)
     log_cov_det = np.sum(np.log(w.real))
     # Use robust inversion by ignoring small
     # singular values
@@ -208,7 +211,7 @@ def mahal_dist(samp_ave, samp_covar, returns_data):
     s[~large] = 0
     s = np.divide(1, s, where=large, out=s)
     samp_excess = returns_data - samp_ave
-    samp_excess_v = samp_excess @ VT.T
+    samp_excess_v = samp_excess @ vt.T
     s_temp_v = samp_excess_v * s
     mahal_distances = np.sum(s_temp_v * samp_excess_v, axis=1)
     return (mahal_distances, log_cov_det)
