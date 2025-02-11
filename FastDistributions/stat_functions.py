@@ -38,7 +38,7 @@ def parallel_bootstrap(
     nskip: int = 100,
     axis=0,
     display_progress=True,
-    sample_size = None,
+    sample_size=None,
 ) -> pd.DataFrame:
     """
     Quick and dirty code to bootstrap a function that returns a
@@ -47,7 +47,8 @@ def parallel_bootstrap(
     see https://stackoverflow.com/questions/352670/weighted-random-selection-with-and-without-replacement#353576
     - arguments
     - ret_data = array of data supplied for function
-    - fn = function that operates on an array of data and returns a dictionary of values or a dataframe
+    - fn = function that operates on an array of data and returns
+           a dictionary of values or a dataframe
     - include_sample = return the function value for the sample
     - threads = number of threads to use
     - nskip = report every time nskip threads complete
@@ -132,8 +133,8 @@ def rolling_backtest_date_function(
     start_date = latest_date - relativedelta(years=rolling_start_years)
     lst_stats = []
     print("Running Backtest")
-    print("Start Date = {0:%Y-%m-%d}".format(start_date))
-    print("End Date   = {0:%Y-%m-%d}".format(latest_date))
+    print(f"Start Date = {start_date:%Y-%m-%d}")
+    print(f"End Date   = {latest_date:%Y-%m-%d}")
     day_count = 0
     start_time = time.time()
     while start_date <= latest_date:
@@ -162,15 +163,15 @@ def rolling_backtest_date_function(
         day_count += 1
         if day_count % skip_periods == 0:
             print(
-                "Completed {0:<6d} periods - {1:%Y-%m-%d}".format(day_count, start_date)
+                f"Completed {day_count:<6d} periods - {start_date:%Y-%m-%d}"
             )
         start_date += sample_freq  # 1 DAY
 
     # Your rolling_subset DataFrame will now contain data for each rolling window
     df = pd.concat(lst_stats)
     run_time = time.time() - start_time
-    print("No of Periods = {:<6d}".format(day_count))
-    print("Runtime (sec)    = {:<11.2f}".format(run_time))
+    print(f"No of Periods = {day_count:<6d}")
+    print(f"Runtime (sec)    = {run_time:<11.2f}")
     return df
 
 
@@ -199,6 +200,15 @@ def rolling_backtest(
     sample_freq=relativedelta(days=1),
     skip_periods: int = 500,
 ) -> pd.DataFrame:
+    """
+    backtest function that calculates rolling daily statistics
+    df_history = DataFrame containing daily returns data for the funds
+    back_fn = function using start and end date that returns a dataframe of results
+    rolling_window_years = size of the data sample in years
+    rolling_start_years  = first date to calculate the PRIIPS performance stats
+    sample_freq = frequency of the sample
+    skip_periods = number of periods to skip before printing progress
+    """
     def sample_fn(x, y):
         return _backtest_fn(df_history, x, y, back_fn)
 
@@ -213,17 +223,18 @@ def rolling_backtest(
 
 
 def _basestats(self):
-        # Return mean, variance, skewness, and kurtosis analytically
-        mean = self._mean()
-        variance = self._var()
-        # Johnson SU skew and kurtosis are complex; you can use numerical methods
-        skew = None
-        kurt = None
-        return mean, variance, skew, kurt
-        
+    # Return mean, variance, skewness, and kurtosis analytically
+    mean = self._mean()
+    variance = self._var()
+    # Johnson SU skew and kurtosis are complex; you can use numerical methods
+    skew = None
+    kurt = None
+    return mean, variance, skew, kurt
+
+
 def edf_stats(x, dist: rv_continuous):
     """
-    Empirical Distribution Function statistics for distribution testing. 
+    Empirical Distribution Function statistics for distribution testing.
     Returns a variety of statistics comparing the empirical distribution
     function with the theoretical distribution.
 
@@ -235,13 +246,13 @@ def edf_stats(x, dist: rv_continuous):
 
     Returns
     -------
-    result : 
+    result :
     A2 : Anderson-Darling Statistic
     W2: Cramer-Von Mises Statistic
     K: Kolgomorov-Smirnov Statistic
     U2: Watson Statistic
     V: Kuiper Statistic
-     
+
     See Also
     --------
     kstest : The Kolmogorov-Smirnov test for goodness-of-fit.
@@ -258,23 +269,27 @@ def edf_stats(x, dist: rv_continuous):
     accordingly
 
 
-    """ # numpy/numpydoc#87  # noqa: E501
+    """  # numpy/numpydoc#87  # noqa: E501
     y = np.sort(x)
-    N = len(y)
+    n = len(y)
     cdf = dist.cdf(y)
     eps = 1e-15
     logcdf = np.log(np.maximum(cdf, eps))
-    cdf_mean = np.sum(cdf) / N
-    logsf = np.log(np.maximum(1-cdf, eps)) # log of survival function
-    i = np.arange(1, N + 1)
-    A2 = -N - np.sum((2*i - 1.0) / N * (logcdf + logsf[::-1]), axis=0) # Anderson-Darling 
-    W2 = np.sum((cdf - ((2*i - 1.0)/(2*N)))**2) + (1/(12*N)) # Cramer-Von Mises
-    U2 = W2 - N*(cdf_mean - 0.5)**2 # Watson
-    
-    # Kolmogorov-Smirnov style stats
-    D_plus = np.max(((i/N) - cdf))
-    D_minus = np.max((cdf - ((i-1)/N)))
+    cdf_mean = np.sum(cdf) / n
+    logsf = np.log(np.maximum(1 - cdf, eps))  # log of survival function
+    i = np.arange(1, n + 1)
+    a_squared = -n - np.sum(
+        (2 * i - 1.0) / n * (logcdf + logsf[::-1]), axis=0
+    )  # Anderson-Darling
+    w_squared = np.sum((cdf - ((2 * i - 1.0) / (2 * n))) ** 2) + (
+        1 / (12 * n)
+    )  # Cramer-Von Mises
+    u_squared = w_squared - n * (cdf_mean - 0.5) ** 2  # Watson
 
-    V = D_plus + D_minus # Kuiper
-    K = max(D_plus, D_minus) # Kolgomorov-Smirnov
-    return A2, W2, K, U2, V
+    # Kolmogorov-Smirnov style stats
+    d_plus = np.max(((i / n) - cdf))
+    d_minus = np.max((cdf - ((i - 1) / n)))
+
+    kuiper_v = d_plus + d_minus  # Kuiper
+    k_s_stat = max(d_plus, d_minus)  # Kolgomorov-Smirnov
+    return a_squared, w_squared, k_s_stat, u_squared, kuiper_v

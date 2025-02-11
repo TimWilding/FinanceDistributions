@@ -6,10 +6,9 @@ import datetime
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
-from pandas import read_csv
+from scipy.integrate import quad
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.integrate import quad
 import FastDistributions as fd
 
 
@@ -73,7 +72,7 @@ def test_priips():
         (df_price_history.Date > datetime.datetime(2018, 10, 27))
         & (df_price_history.Date < datetime.datetime(2023, 10, 27))
     ]
-    df_s = fd.PRIIPS_stats_df(df_sample_5y, index_field="Ticker")
+    _ = fd.PRIIPS_stats_df(df_sample_5y, index_field="Ticker")
 
     df_backtest_old = fd.rolling_backtest(
         df_price_history,
@@ -87,12 +86,12 @@ def test_priips():
     df_backtest_old.to_csv("PRIIPS_Backtest.csv")
     plot_stats_col(df_backtest_old, "Favourable", "Performance", "Favourable (Orig)")
 
-    df_bs = fd.PRIIPS_stats_bootstrap(df_sample_5y, index_field="Ticker")
+    _ = fd.PRIIPS_stats_bootstrap(df_sample_5y, index_field="Ticker")
     print("Finished")
     return
 
 
-def calc_correl(df, lag=1):
+def calc_correl(df):
     """
     given a dataframe with columns - Identifier, Date, and LogReturn
     calculate a correlation matrix for each of the identifiers.
@@ -111,11 +110,14 @@ def calc_correl(df, lag=1):
 
 
 def calc_adj_corr(df, lag=1):
+    """
+    Test the Newey-West adjusted correlation function
+    """
     pivot_df = df.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
     lst_names = df["Name"].unique()
-    X = pivot_df[lst_names].values
-    corr_mat = fd.newey_adj_corr(X, lag)
+    x_vals = pivot_df[lst_names].values
+    corr_mat = fd.newey_adj_corr(x_vals, lag)
     df_corr = pd.DataFrame(corr_mat, columns=lst_names)
     df_corr["Name"] = lst_names
     df_corr.set_index("Name", inplace=True)
@@ -131,12 +133,6 @@ def test_correl():
     """
     BACKTEST_YEARS = 15  # Number of years to use for backtest
     WINDOW_YEARS = 2  # Number of years to use for calculation of correlation
-    lst_indices = [
-        ("^GSPC", "SP 500"),
-        ("^FTSE", "FTSE 100"),
-        ("^N225", "Nikkei 225"),
-    ]  # , ('VWRA.L', 'Vanguard FTSE All-World')
-    # lst_indices = [('^SP500TR', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
     df_prices = fd.get_test_data()
 
     df_month = (
@@ -146,12 +142,15 @@ def test_correl():
         .rename({"EndOfMonth": "Date"})
     )
     df_month.columns = ["Name", "Date", "LogReturn"]
-    df_roll_month_correls = fd.rolling_backtest(
+    _ = fd.rolling_backtest(
         df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS
     )
 
 
 def test_new_priips_aex():
+    """
+    Test the new PRIIPS functionality on the AEX index
+    """
     df_prices = fd.get_test_data()
     df_prices = df_prices[df_prices.Ticker == "^AEX"]
     df_backtest = fd.rolling_backtest(
@@ -168,22 +167,19 @@ def test_new_priips_aex():
 
 def test_robust_correl():
     """
-    Test robust correlation
+    Test robust correlation using EM Algorithm to fit Multivariate T-Distribution
     """
-    lst_indices = [
-        ("^GSPC", "SP 500"),
-        ("^FTSE", "FTSE 100"),
-        ("^N225", "Nikkei 225"),
-    ]  # , ('VWRA.L', 'Vanguard FTSE All-World')
-    # lst_indices = [('^SP500TR', 'SP 500'), ('^FTSE', 'FTSE 100'), ('^N225', 'Nikkei 225')] #, ('VWRA.L', 'Vanguard FTSE All-World')
     df_prices = fd.get_test_data(5)
     pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
     (_, samp_covar, nu, _) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
+    np.testing.assert_approx_equal(nu, 4.451310494728308, 4)
     _ = fd.corr_conv(samp_covar)
     (_, norm_cov, _, _) = fd.TDist.em_fit(pivot_df.values, dof=1000)
     norm_corr = fd.corr_conv(norm_cov)
     act_corr = pivot_df.corr()
+    corr_diff = norm_corr - act_corr
+    print(corr_diff)
     print("Finished")
 
 
@@ -257,6 +253,10 @@ def test_dists():
 
 
 def test_cached_read():
+    """
+    Cached read checks whether file has been downloaded
+    before reading in a cSV file
+    """
     df_prices = fd.read_cached_excel(
         "https://www.eurekahedge.com/Indices/ExportIndexReturnsToExcel?IndexType=Eurekahedge&IndexId=640",
         header=3,
@@ -268,15 +268,19 @@ def test_cached_read():
 
 
 def test_regress():
+    """
+    Tests the sample regression function
+    """
     df_prices = fd.get_test_data(5)
     pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
-    df = fd.sample_regress(pivot_df, "SP 500", True, True)
+    _ = fd.sample_regress(pivot_df, "SP 500", True, True)
     print("Finished testing regression")
 
 
 def test_risk_parity():
-    """This is a test on a known problem"""
+    """This is a test of risk parity optimisation
+    on a known problem"""
     sigma = np.vstack(
         [
             np.array((1.0000, 0.0015, -0.0119)),
@@ -292,8 +296,11 @@ def test_risk_parity():
 
 
 def test_black_litterman():
+    """
+    Test Black-Litterman functionality
+    """
     # Data given in He & Litterman 1999 for illustrative calculations
-    lst_countries = ["Australia", "Canada", "France", "Germany", "Japan", "UK", "USA"]
+    # lst_countries = ["Australia", "Canada", "France", "Germany", "Japan", "UK", "USA"]
 
     # Table 1 - Correlations
     correl_hel = np.array(
@@ -313,7 +320,7 @@ def test_black_litterman():
     w_hel = np.array([1.6, 2.2, 5.2, 5.5, 11.6, 12.4, 61.5]) / 100
 
     # View Portfolios
-    P = (
+    pfs = (
         np.array(
             [
                 [0.0, 0.0, -29.5, 100.0, 0.0, -70.5, 0.0],
@@ -331,11 +338,11 @@ def test_black_litterman():
     delta = 2.5
     tau_hel = 0.05
     q = np.array([5, 3]) / 100
-    Omega = np.array([[0.021, 0.0], [0.0, 0.017]]) * tau_hel
+    omega = np.array([[0.021, 0.0], [0.0, 0.017]]) * tau_hel
     pi = fd.reverse_optimise(w_hel, cov_hel, delta)  # calculate equilibrium returns
     print(pi)
     pi_hat, sigma_hat = fd.black_litterman_stats(
-        w_hel, cov_hel, P, q, Omega, tau_hel, delta, True
+        w_hel, cov_hel, pfs, q, omega, tau_hel, delta, True
     )
 
     w_opt = fd.unconstrained_optimal_portfolio(sigma_hat, pi_hat, delta)
@@ -344,18 +351,18 @@ def test_black_litterman():
     print("Change from Original")
     print(w_opt - (w_hel / (1 + tau_hel)))
     lam, dlam_dq = fd.he_litterman_lambda(
-        w_hel, cov_hel, P, q, Omega, tau_hel, delta, True
+        w_hel, cov_hel, pfs, q, omega, tau_hel, delta, True
     )
     print("Lambda")
     print(lam)
     print("dlamdq")
     print(dlam_dq)
     print("Fusai-Meucci Consistency")
-    print(fd.fusai_meucci_consistency(pi_hat, pi, tau_hel * cov_hel, P, Omega))
+    print(fd.fusai_meucci_consistency(pi_hat, pi, tau_hel * cov_hel, pfs, omega))
     print("Theils View Compatibility")
-    print(fd.theils_view_compatibility(q, pi, tau_hel * cov_hel, P, Omega))
-    te, dtedq = fd.braga_natale_measure(w_hel, cov_hel, P, q, Omega, tau_hel, delta)
-    print("Braga Natale measure = tracking error = {0:5.2f}%".format(te))
+    print(fd.theils_view_compatibility(q, pi, tau_hel * cov_hel, pfs, omega))
+    te, dtedq = fd.braga_natale_measure(w_hel, cov_hel, pfs, q, omega, tau_hel, delta)
+    print(f"Braga Natale measure = tracking error = {te:5.2f}%")
     print(dtedq)
     ans_opt = np.array(
         [
@@ -378,21 +385,23 @@ def test_expected_shortfall():
     """
     df_ret = fd.get_test_data()
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
-    (es, var) = fd.sample_expected_shortfall(sp_ret, 0.95)
+    (es, _) = fd.sample_expected_shortfall(sp_ret, 0.95)
     np.testing.assert_approx_equal(es, -3.0182639295131275, 3)
     gs = fd.GeneralisedSkewT.fitclass(sp_ret, display_progress=False)
-    (es_dist, var_dist) = fd.expected_shortfall(gs, 0.95)
+    (es_dist, _) = fd.expected_shortfall(gs, 0.95)
     np.testing.assert_approx_equal(es_dist, -2.9305505707305555, 3)
     sp_tail = fd.fit_tail_model(sp_ret, 0.95)
     np.testing.assert_approx_equal(sp_tail[0], 0.20524897090856728, 3)
-    (es_tail, var_tail) = fd.expected_shortfall_tail_model(
+    (es_tail, _) = fd.expected_shortfall_tail_model(
         0.95, sp_tail[0], sp_tail[1], sp_tail[2], 0.99
     )
     np.testing.assert_approx_equal(es_tail, -5.344663974593491, 3)
 
 
 def test_fit_johnson():
-
+    """
+    Test the Johnson SU Distribution - fitting and statistics
+    """
     def pdf_su_shape(x, gamma, delta):
         return fd.JohnsonSU(gamma, delta, 0, 1.0).pdf(x)
 
@@ -402,7 +411,7 @@ def test_fit_johnson():
         "gamma = 0.5, delta = 0.8": [lambda x: pdf_su_shape(x, 0.5, 0.8), "g--"],
         "gamma = 0.5, delta = 0.05": [lambda x: pdf_su_shape(x, 0.5, 0.05), "k--"],
         "gamma = 0.0, delta = 0.1": [lambda x: pdf_su_shape(x, 0.0, 0.1), "y--"],
-        "Normal": [lambda x: norm.pdf(x), "k-"],
+        "Normal": [norm.pdf, "k-"],
     }
     fd.plot_multi_function(
         lst_dist,
@@ -413,14 +422,14 @@ def test_fit_johnson():
     )
     def cdf_su_shape(x, gamma, delta):
         return fd.JohnsonSU(gamma, delta, 0, 1.0).cdf(x)
-    
+
     lst_dist = {
         "gamma = -1.1, delta = 1.5": [lambda x: cdf_su_shape(x, -1.1, 1.5), "r--"],
         "gamma = -1.1, delta = 0.8": [lambda x: cdf_su_shape(x, -1.1, 0.8), "b--"],
         "gamma = 0.5, delta = 0.8": [lambda x: cdf_su_shape(x, 0.5, 0.8), "g--"],
         "gamma = 0.5, delta = 0.05": [lambda x: cdf_su_shape(x, 0.5, 0.05), "k--"],
         "gamma = 0.0, delta = 0.1": [lambda x: cdf_su_shape(x, 0.0, 0.1), "y--"],
-        "Normal": [lambda x: norm.cdf(x), "k-"],
+        "Normal": [norm.cdf, "k-"],
     }
     fd.plot_multi_function(
         lst_dist,
@@ -433,13 +442,13 @@ def test_fit_johnson():
     jsu = fd.JohnsonSU(0.5, 0.05, 0, 1.0)
     TEST_VAL = 3
     cdf = jsu.cdf(TEST_VAL)
-    cdf_approx = quad(lambda x: jsu.pdf(x), -np.inf, TEST_VAL)[0]
+    cdf_approx = quad(jsu.pdf, -np.inf, TEST_VAL)[0]
     np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
 
     jsu = fd.JohnsonSU(-1.1, 0.8, 0, 1.0)
     TEST_VAL = 0.5
     cdf = jsu.cdf(TEST_VAL)
-    cdf_approx = quad(lambda x: jsu.pdf(x), -np.inf, TEST_VAL)[0]
+    cdf_approx = quad(jsu.pdf, -np.inf, TEST_VAL)[0]
     np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
 
     df_ret = fd.get_test_data()
@@ -466,7 +475,7 @@ def test_fit_johnson():
     fd.plot_hist_fit(sp_ret, "SP 500", dict_pdf, 50, log_scale=True)
     s = fd.edf_stats(sp_ret, jsu_fit)
     print(s)
-
+    np.testing.assert_approx_equal(s[0], 1.1395746330408656, 1e-6)
 
 
 
