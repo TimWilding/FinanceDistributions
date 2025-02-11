@@ -13,7 +13,6 @@ from scipy.optimize import minimize, NonlinearConstraint, Bounds
 from scipy.stats import rv_continuous, FitError
 
 
-
 def gauss_legendre_sample(n):
     """
     This routine returns a sample of x values and weights
@@ -32,12 +31,15 @@ def gauss_legendre_sample(n):
       x_wts:  numpy array containing weights for each point
     """
     t, w = roots_legendre(n)
+
     # define x_transform and dxdt_inv
     # x_transform converts -1 to +1 to -infinity to +infinity
     def x_transform(t):
         return t / (1 - t**2)
+
     def dxdt_inv(t):
         return (1 + t**2) / (1 - t**2) ** 2
+
     x_vals = x_transform(t)
     x_wts = w * dxdt_inv(t)
     return x_vals, x_wts

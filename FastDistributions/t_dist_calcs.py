@@ -142,7 +142,7 @@ class TDist:
                         nu=nu,
                     ),
                     0,
-                    np.Inf,
+                    np.inf,
                 )[0]
             else:
                 cdf[i] = chi2.cdf(mahl_dist[i], no_stocks[i])
