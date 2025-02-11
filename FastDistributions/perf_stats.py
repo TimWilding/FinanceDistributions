@@ -1,8 +1,10 @@
 """
 Performance statistics such as the Sharpe Ratio, the Probabilistic Sharpe Ratio, and the Omega Ratio
 """
+
 import numpy as np
 import scipy
+
 
 def sharpe_ratio(excess_returns, periods_in_year=1):
     """
@@ -36,15 +38,14 @@ def sharpe_ratio(excess_returns, periods_in_year=1):
     mu = np.mean(excess_returns)
     sigma = np.std(excess_returns)
 
-
-    sr = mu/sigma
+    sr = mu / sigma
     n = excess_returns.shape[0]
-    V_g = (1 + 0.5*sr**2) / n
+    V_g = (1 + 0.5 * sr**2) / n
 
-    mu_annual = periods_in_year*mu
-    sigma_annual = np.sqrt(periods_in_year)*sigma
-    sr_annual = mu_annual/sigma_annual
-    sr_sd = np.sqrt(periods_in_year*V_g)
+    mu_annual = periods_in_year * mu
+    sigma_annual = np.sqrt(periods_in_year) * sigma
+    sr_annual = mu_annual / sigma_annual
+    sr_sd = np.sqrt(periods_in_year * V_g)
 
     return (sr_annual, mu_annual, sigma_annual, sr_sd)
 
@@ -84,12 +85,15 @@ def psr(sr, skew, kurt, srb, periods_in_year, n):
     P(SR>benchmark_sharpe_ratio):
          probability of SR being better than benchmark
     """
-    V_g = (1 + (1/2)*sr**2 - skew*sr + ((kurt -3)/4)*sr**2) / (n - 1)
+    V_g = (1 + (1 / 2) * sr**2 - skew * sr + ((kurt - 3) / 4) * sr**2) / (n - 1)
     srb = srb / np.sqrt(periods_in_year)
     prob_sr = scipy.stats.norm.cdf((sr - srb) / np.sqrt(V_g))
     return prob_sr
 
-def probabilistic_sharpe_ratio(excess_returns, sharpe_ratio_benchmark=0, periods_in_year=1):
+
+def probabilistic_sharpe_ratio(
+    excess_returns, sharpe_ratio_benchmark=0, periods_in_year=1
+):
     """
     Use the variance of the estimate of Sharpe ratio taken
     from Opdyke (2007) "Comparing Sharpe Ratios: So Where Are the P-Values"
@@ -128,12 +132,13 @@ def probabilistic_sharpe_ratio(excess_returns, sharpe_ratio_benchmark=0, periods
     sigma = np.std(excess_returns)
     skew = scipy.stats.skew(excess_returns)
     kurt = scipy.stats.kurtosis(excess_returns, fisher=False)
-    sr = mu/sigma
+    sr = mu / sigma
     n = excess_returns.shape[0]
-    V_g = (1 + (1/2)*sr**2 - skew*sr + ((kurt -3)/4)*sr**2) / (n - 1)
+    V_g = (1 + (1 / 2) * sr**2 - skew * sr + ((kurt - 3) / 4) * sr**2) / (n - 1)
     srb = sharpe_ratio_benchmark / np.sqrt(periods_in_year)
     prob_sr = scipy.stats.norm.cdf((sr - srb) / np.sqrt(V_g))
-    return (prob_sr, np.sqrt(periods_in_year)*sr, np.sqrt(periods_in_year*V_g))
+    return (prob_sr, np.sqrt(periods_in_year) * sr, np.sqrt(periods_in_year * V_g))
+
 
 def omega_ratio(returns, returns_threshold=0, periods_in_year=12, geom_returns=True):
     """
@@ -160,21 +165,20 @@ def omega_ratio(returns, returns_threshold=0, periods_in_year=12, geom_returns=T
 
     Returns
     =======
-    omega_ratio:
+    omega:
        omega ratio
 
     """
 
     excess_returns_threshold = returns_threshold / np.sqrt(periods_in_year)
     if not geom_returns:
-        excess_returns = (1 + returns_threshold)**np.sqrt(1/periods_in_year) - 1
+        excess_returns = (1 + returns_threshold) ** np.sqrt(1 / periods_in_year) - 1
 
     excess_returns = returns - excess_returns_threshold
     positive_sum = np.sum(excess_returns[excess_returns > 0])
     negative_sum = -np.sum(excess_returns[excess_returns < 0])
-    omega_ratio = positive_sum / negative_sum
-    return omega_ratio
-
+    omega = positive_sum / negative_sum
+    return omega
 
 
 def min_track_record_length(sr, sr_std, sharpe_ratio_benchmark=0.0, prob=0.95):
@@ -217,6 +221,9 @@ def min_track_record_length(sr, sr_std, sharpe_ratio_benchmark=0.0, prob=0.95):
 
 
     """
-    min_trl = 1 + (sr_std ** 2) * (scipy.stats.norm.ppf(prob) / (sr - sharpe_ratio_benchmark)) ** 2
+    min_trl = (
+        1
+        + (sr_std**2)
+        * (scipy.stats.norm.ppf(prob) / (sr - sharpe_ratio_benchmark)) ** 2
+    )
     return min_trl
-

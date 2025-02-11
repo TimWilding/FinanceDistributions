@@ -172,8 +172,12 @@ def test_robust_correl():
     df_prices = fd.get_test_data(5)
     pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
-    (_, samp_covar, nu, _) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
+    (samp_ave, samp_covar, nu, _) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
     np.testing.assert_approx_equal(nu, 4.451310494728308, 4)
+    td = fd.TDist(samp_ave, samp_covar, nu)
+    x = td.simulate(1000)
+    _, _ = td.mahal_dist(pivot_df.values)
+    _ = td.cumdf(pivot_df.values)
     _ = fd.corr_conv(samp_covar)
     (_, norm_cov, _, _) = fd.TDist.em_fit(pivot_df.values, dof=1000)
     norm_corr = fd.corr_conv(norm_cov)
@@ -420,6 +424,7 @@ def test_fit_johnson():
         y_log_scale=False,
         title="Johnson S_U Distribution",
     )
+
     def cdf_su_shape(x, gamma, delta):
         return fd.JohnsonSU(gamma, delta, 0, 1.0).cdf(x)
 
@@ -440,15 +445,15 @@ def test_fit_johnson():
     )
 
     jsu = fd.JohnsonSU(0.5, 0.05, 0, 1.0)
-    TEST_VAL = 3
-    cdf = jsu.cdf(TEST_VAL)
-    cdf_approx = quad(jsu.pdf, -np.inf, TEST_VAL)[0]
+    test_val = 3
+    cdf = jsu.cdf(test_val)
+    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
     np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
 
     jsu = fd.JohnsonSU(-1.1, 0.8, 0, 1.0)
-    TEST_VAL = 0.5
-    cdf = jsu.cdf(TEST_VAL)
-    cdf_approx = quad(jsu.pdf, -np.inf, TEST_VAL)[0]
+    test_val = 0.5
+    cdf = jsu.cdf(test_val)
+    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
     np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
 
     df_ret = fd.get_test_data()
@@ -476,7 +481,6 @@ def test_fit_johnson():
     s = fd.edf_stats(sp_ret, jsu_fit)
     print(s)
     np.testing.assert_approx_equal(s[0], 1.1395746330408656, 1e-6)
-
 
 
 if __name__ == "__main__":

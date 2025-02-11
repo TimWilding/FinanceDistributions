@@ -1,11 +1,13 @@
 """
 module containing useful tail statistics such as expected shortfall 
 """
+
 import numpy as np
 from scipy import stats
 from scipy.stats import rv_continuous
 from scipy.integrate import quad
 import warnings
+
 
 def expected_shortfall(distribution: rv_continuous, quantile: float, *args, **kwargs):
     """
@@ -28,7 +30,7 @@ def expected_shortfall(distribution: rv_continuous, quantile: float, *args, **kw
         raise ValueError("Quantile must be between 0 and 1.")
 
     # Calculate the Value at Risk (VaR) at the given quantile
-    var = distribution.ppf(1-quantile, *args, **kwargs)
+    var = distribution.ppf(1 - quantile, *args, **kwargs)
 
     # Define a function to integrate the tail of the distribution
     def tail_expectation(x):
@@ -38,6 +40,7 @@ def expected_shortfall(distribution: rv_continuous, quantile: float, *args, **kw
     es, _ = quad(tail_expectation, -np.inf, var)
     tail_prob = 1 - quantile
     return es / tail_prob, var
+
 
 def sample_expected_shortfall(returns: np.array, quantile: float):
     """
@@ -51,10 +54,9 @@ def sample_expected_shortfall(returns: np.array, quantile: float):
         float: The Expected Shortfall at the specified quantile.
         float: The Value at Risk (VaR) at the specified quantile.
     """
-    threshold = np.quantile(returns, 1-quantile)
+    threshold = np.quantile(returns, 1 - quantile)
     negative_returns = returns[returns < threshold]
     return np.mean(negative_returns), threshold
-
 
 
 def fit_tail_model(returns: np.ndarray, threshold: float = 0.95):
@@ -82,14 +84,14 @@ def fit_tail_model(returns: np.ndarray, threshold: float = 0.95):
         β = scale parameter of gpd
         threshold_value = value of threshold quantile
     """
-    threshold_value = np.quantile(returns, 1-threshold)
+    threshold_value = np.quantile(returns, 1 - threshold)
     if threshold < 0.5:
         excess = returns[returns > threshold_value] - threshold_value
     else:
-        excess = (threshold_value - returns[returns < threshold_value])
+        excess = threshold_value - returns[returns < threshold_value]
 
     with warnings.catch_warnings():
-        warnings.filterwarnings('ignore')
+        warnings.filterwarnings("ignore")
         # fit a generalised pareto distribution with a location
         # parameter of 0 (floc=0)
         gpd_params = stats.genpareto.fit(excess, floc=0)
@@ -122,10 +124,10 @@ def expected_shortfall_tail_model(alpha, ξ, β, threshold_value, quantile: floa
     """
     if not alpha <= quantile < 1:
         raise ValueError("Quantile must be between alpha and 1.")
-    
+
     gp = stats.genpareto(ξ, 0, β)
     # Calculate the Value at Risk (VaR) at the given quantile
-    var = gp.ppf((quantile-alpha)/(1-alpha))
+    var = gp.ppf((quantile - alpha) / (1 - alpha))
 
     # Define a function to integrate the tail of the distribution
     def tail_expectation(x):
@@ -133,6 +135,6 @@ def expected_shortfall_tail_model(alpha, ξ, β, threshold_value, quantile: floa
 
     # Compute the expected shortfall as the conditional expectation
     es, _ = quad(tail_expectation, var, np.inf)
-    tail_prob = (1 - quantile)/(1-alpha)
+    tail_prob = (1 - quantile) / (1 - alpha)
     es = es / tail_prob
-    return threshold_value-es, threshold_value-var
+    return threshold_value - es, threshold_value - var

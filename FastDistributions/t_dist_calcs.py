@@ -1,12 +1,20 @@
+"""
+Suite of routines used to fit a covariance matrix using a Multivariate
+T-Distribution using the EM Algorithm.
+"""
+
 import math
 import time
+from functools import partial
+
 import numpy as np
 import scipy.optimize as sopt
+from scipy.integrate import quad
+from scipy.linalg import eigh
 from scipy.special import gamma
 from scipy.stats import chi2
-from scipy.integrate import quad
-from .correl_calcs import mahal_dist
 
+from .correl_calcs import mahal_dist
 
 MIN_DOF = 0.2
 MAX_DOF = 1000
@@ -27,6 +35,85 @@ def _wt_stats(tau, returns_data):
 
 
 class TDist:
+    """
+    Multivariate T-Distribution routines
+    """
+
+    def __init__(self, average, covariance, nu):
+        self.average = average
+        self.covariance = covariance
+        self.nu = nu
+
+    def mahal_dist(self, returns_data):
+        """
+        Calculate the Mahalanobis Distance using a sample
+        """
+        return mahal_dist(self.average, self.covariance, returns_data)
+
+    def cumdf(self, returns_data):
+        """
+        Calculate the cumulative density function
+        """
+        mahal_distances, _ = self.mahal_dist(returns_data)
+        return TDist.cdf(
+            self.nu,
+            mahal_distances,
+            returns_data.shape[1] * np.ones(returns_data.shape[0]),
+        )
+
+    def simulate(self, num_obs, rng_sim=None):
+        """
+        generate T-Dist random numbers with a positive semi-definite covariance matrix a
+        and a gvien mean
+        """
+
+        rng = rng_sim
+        if rng is None:
+            rng = np.random.default_rng()
+
+        num_var = self.covariance.shape[0]
+
+        # Use eigen-decomposition to work out the square root of the
+        # covariance matrix
+        w, u = eigh(
+            self.covariance
+        )  # use the eigen-decomposition so that the results are robust
+        w = np.sqrt(np.maximum(w, 0))
+        sig_root = w * u
+
+        # generate a set of independent normal random numbers
+        norm_rnd = rng.normal(0.0, 1.0, (num_obs, num_var))
+        # multiply by the square root of the covariance matrix
+        y = norm_rnd @ sig_root.T
+
+        # generate the gamma random numbers to rescale the results
+        gamma_param = 0.5 * self.nu
+        v_scale = rng.gamma(
+            size=(num_obs, 1), scale=1.0 / gamma_param, shape=gamma_param
+        )
+        y = np.multiply(y, np.sqrt(1 / v_scale))
+
+        # add the average to the results
+        y = y + np.outer(np.ones((num_obs)), self.average)
+        return y
+
+    @staticmethod
+    def prob_cdf(v, mahl_dist, no_stocks, nu):
+        """Calculate the probability of the Mahalanobis distance exceeds this value
+        given the degrees of freedom"""
+        # TODO: Verify this calculation using Monte Carlo simulation
+        gamma_param = 0.5 * nu
+        gam_shape = gamma_param
+        gam_scale = 1.0 / gamma_param
+
+        def gampdf(t):
+            return (
+                t ** (gam_shape - 1.0)
+                * math.exp(-t / gam_scale)
+                / (gamma(gam_shape) * gam_scale**gam_shape)
+            )
+
+        return gampdf(v) * chi2.cdf(mahl_dist * v, no_stocks)
 
     @staticmethod
     def cdf(nu, mahl_dist, no_stocks):
@@ -37,9 +124,6 @@ class TDist:
         #
         # Use numerical integration to work out the probability
 
-        gamma_param = 0.5 * nu
-        gam_shape = gamma_param
-        gam_scale = 1.0 / gamma_param
         # gampdf = prob. distribution function
         # f is the weighted chi-squared function
         n_obs = mahl_dist.shape[0]
@@ -50,13 +134,16 @@ class TDist:
         cdf = np.zeros((n_obs))
         for i in range(0, n_obs):
             if nu < 5000:
-                gampdf = (
-                    lambda v: v ** (gam_shape - 1.0)
-                    * math.exp(-v / gam_scale)
-                    / (gamma(gam_shape) * gam_scale**gam_shape)
-                )
-                f = lambda v: gampdf(v) * chi2.cdf(mahl_dist[i] * v, no_stocks[i])
-                cdf[i] = quad(f, 0, np.Inf)[0]
+                cdf[i] = quad(
+                    partial(
+                        TDist.prob_cdf,
+                        mahl_dist=mahl_dist[i],
+                        no_stocks=no_stocks[i],
+                        nu=nu,
+                    ),
+                    0,
+                    np.Inf,
+                )[0]
             else:
                 cdf[i] = chi2.cdf(mahl_dist[i], no_stocks[i])
         return cdf
@@ -96,7 +183,10 @@ class TDist:
     ):
         """calculate the degrees of freedom parameter that maximimises the likelihood"""
         ll_current = -np.sum(TDist.llcalc(nu, mahl_dist, no_stock, log_cov_det))
-        fp = lambda p: -np.sum(TDist.llcalc(p, mahl_dist, no_stock, log_cov_det))
+
+        def fp(p):
+            return -np.sum(TDist.llcalc(p, mahl_dist, no_stock, log_cov_det))
+
         new_min = min_dof
         new_max = max_dof
         fun_brack = (min_dof, nu, max_dof)
@@ -117,6 +207,7 @@ class TDist:
             new_min = max(nu_ret - 2 * abs(nu_ret - nu), MIN_DOF)
         return (nu_ret, new_min, new_max)
 
+    @staticmethod
     def em_fit(returns_data, max_iters=100, tol=1e-10, display_progress=True, dof=-1.0):
         """
         Use the EM Algorithm to fit a multivariate T-distribution to the returns
@@ -140,7 +231,7 @@ class TDist:
         ll = 0.0
         delta_ll = 0.0
         if display_progress:
-            print('Iteration    Nu      DeltaTau        LL            LL_target')
+            print("Iteration    Nu      DeltaTau        LL            LL_target")
 
         for iter_num in range(1, max_iters + 1):
 
