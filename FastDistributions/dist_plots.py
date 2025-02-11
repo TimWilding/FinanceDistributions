@@ -1,6 +1,6 @@
 """
-Useful statistical plots such as 
- plot_qq - generalised qq plot that can take multiple distributions, 
+Useful statistical plots such as
+ plot_qq - generalised qq plot that can take multiple distributions,
  plot_indexed_prices - plot all returns referenced to 100 on start date
  plot_hist_fit - plot a histogram with the theoretical fit
  plot_function - plot a generic function on a chart

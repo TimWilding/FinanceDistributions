@@ -134,9 +134,9 @@ def file_stitch(file, outfile=None, hashfile=None):
     #            outfile = os.path.join(fdir, outfile)
 
     vvprint(f"Output: {outfile or file}")
-    
+
     buffer = BytesIO()
-    with open(outfile or file, "wb") as fh:
+    with open(outfile or file, "wb"):
         for filename in file_parts:
             vvprint(f"Reading {filename}")
             with open(filename, "rb") as prt_fh:
@@ -197,6 +197,7 @@ def sort_file_parts(file_part_list):
     fparts.sort(key=lambda x: x[0])
     fparts = [prt[1] for prt in fparts]
     return fparts
+
 
 def file_stitch_buffer(file):
     """

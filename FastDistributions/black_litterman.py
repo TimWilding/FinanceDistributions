@@ -1,6 +1,6 @@
 """
 Routines to assist with the use of Black-Litterman when building
-quadratic optimised portfolios. For details of the techniques 
+quadratic optimised portfolios. For details of the techniques
 see Satchell & Scowcroft (2000) - A demystification of the Black-Litterman
 model
 """

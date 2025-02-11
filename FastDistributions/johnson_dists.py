@@ -1,9 +1,9 @@
 """
 Implementation of the Johnson SU distribution and fitting routine
-The Johnson distribution is a four-parameter family of continuous probability distributions 
+The Johnson distribution is a four-parameter family of continuous probability distributions
 defined by four parameters. The distribution is a transformed version of the Normal
-distribution using an arcsinh transformation. The Johnson SU distribution is an 
-unbounded version of the Johnson SB distribution. 
+distribution using an arcsinh transformation. The Johnson SU distribution is an
+unbounded version of the Johnson SB distribution.
 """
 
 import numpy as np
@@ -138,6 +138,7 @@ class JohnsonSU(rv_continuous):
         return cdf
 
     def _stats(self):
+        #TODO: Implement skewness and kurtosis calculations
         return _basestats(self)
 
     @staticmethod

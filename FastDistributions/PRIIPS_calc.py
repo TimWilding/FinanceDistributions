@@ -104,7 +104,7 @@ def get_stress_window(
         )
     if periods_in_year == 12:
         if n < 60:
-            raise Exception(
+            raise ValueError(
                 "Insufficient data for PRIIPS calculation - 5 years monthly required"
             )
         if holding_period < 1.0:
@@ -113,7 +113,7 @@ def get_stress_window(
             return 12
     if periods_in_year == 52:
         if n < 208:
-            raise Exception(
+            raise ValueError(
                 "Insufficient data for PRIIPS calculation - 4 years weekly required"
             )
         if holding_period < 1.0:
@@ -122,7 +122,7 @@ def get_stress_window(
             return 16
     # otherwise, assume daily data
     if n < 2 * periods_in_year:
-        raise Exception(
+        raise ValueError(
             "Insufficient data for PRIIPS calculation - 2 years daily required"
         )
     if holding_period < 1.0:
@@ -205,7 +205,7 @@ def PRIIPS_stats(returns, holding_period=5, periods_in_year=256):
     require a rolling volatility
     """
     if returns.shape[0] < 1:
-        raise Exception("Insufficient data for calculation of PRIIPS statistics")
+        raise ValueError("Insufficient data for calculation of PRIIPS statistics")
     mu, sigma, skew, kurt = calc_moments(returns)
 
     sigma_stress, stress_val = get_stress_outcome(
@@ -273,7 +273,7 @@ def PRIIPS_stats_2020(returns, holding_period=5, periods_in_year=256):
      Note that the stress performance percentile has changed
     """
     if returns.shape[0] < 1:
-        raise Exception("Insufficient data for calculation of PRIIPS statistics")
+        raise ValueError("Insufficient data for calculation of PRIIPS statistics")
 
     mu, sigma, skew, kurt = calc_moments(returns)
     sigma_stress, stress_val = get_stress_outcome(
@@ -417,8 +417,10 @@ def PRIIPS_stats_bootstrap(
     Y = pivoted_df.values
     mask = np.logical_not(np.any(np.isnan(Y), axis=1))
     Z = Y[mask, :]  # only use columns of Y that don't contain any NaNs
-    boot_fn = lambda x: PRIIPS_stats_array(
-        x, pivoted_df.columns, holding_period, periods_in_year, use_new, None
-    )
+
+    def boot_fn(x):
+        return PRIIPS_stats_array(
+            x, pivoted_df.columns, holding_period, periods_in_year, use_new, None
+        )
 
     return parallel_bootstrap(Z, boot_fn, nbs, include_sample=False)
