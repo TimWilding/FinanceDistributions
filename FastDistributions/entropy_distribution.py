@@ -1,6 +1,6 @@
 """
-Entropy Distributions are an extension of the Normal distribution that rely on the maximum 
-entropy property. If all we know about a distribution is its first two moments, then 
+Entropy Distributions are an extension of the Normal distribution that rely on the maximum
+entropy property. If all we know about a distribution is its first two moments, then
 a Normal distribution is the distribution with the maximum entropy. This can be extended
 to the situation with higher moments and has solutions where the pdf is the exponential
 of a polynomial function.
@@ -249,8 +249,6 @@ class EntropyDistFit:
         #
         # The callback for calculating the Jacobian
         #
-        m = ƛ.shape[0] - 1
-        #  V = vandermonde_matrix(self.x_vals, m)
         ll = safe_log_likelihoods(ƛ, self.x_vals)
         pdf_vals = np.exp(ll)
         g_vals = self.v_xvals.T * pdf_vals
@@ -277,7 +275,6 @@ class EntropyDistFit:
         return H
 
     def _constrainthessian(self, ƛ, v):
-        m = ƛ.shape[0] - 1
         ll = safe_log_likelihoods(ƛ, self.x_vals)
         pdf_vals = np.exp(ll)
         wt_s = np.sqrt(pdf_vals * self.x_wts)
@@ -316,8 +313,14 @@ def _entropy_fit(
     max_iter=50000,
     x_toler=1e-10,
 ):
+    
+    npts = returns_data.shape[0]
+    if prob is None:
+        wt_prob = np.ones(npts) / npts
+    else:
+        wt_prob = prob
 
-    ent_fit = EntropyDistFit(returns_data, npoly=x0.shape[0])
+    ent_fit = EntropyDistFit(returns_data, wt_data=wt_prob, npoly=x0.shape[0])
 
     init_x = x0.copy()
     init_x[0] = np.log(ent_fit.constraints(init_x))
@@ -335,11 +338,7 @@ def _entropy_fit(
     if display_progress:
         print("Adjusted Probability Sum")
         print(ent_fit.constraints(init_x))
-    npts = returns_data.shape[0]
-    if prob is None:
-        wt_prob = np.ones(npts) / npts
-    else:
-        wt_prob = prob
+
     # mean_dist = np.average(returns_data, weights=wt_prob)
     # var_dist = np.cov(returns_data, aweights=wt_prob)
     nlc = NonlinearConstraint(

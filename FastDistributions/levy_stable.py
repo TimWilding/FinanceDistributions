@@ -1,6 +1,7 @@
 """
 Fast fitting of Levy-Stable distributions using interpolation of prebuilt functions
 """
+
 import os
 import math
 import pickle
@@ -16,7 +17,6 @@ SCALE_VAR = 1
 ALPHA_VAR = 3  # -1 < skew_var< -1
 BETA_VAR = 2  # K>0
 
-INTERP_FILE_ID = "https://www.dropbox.com/scl/fi/ep42m99qba2kekr7w5qz8/ll_levy_stable_interp_tan.pickle?rlkey=l47vzadf8ch7zabu5pakjtf63&dl=0"
 DESTINATION = "model.pkl"
 
 
@@ -55,7 +55,6 @@ class CartesianGridInterpolator:
         return map_coordinates(
             self.values, coords, order=self.order, cval=np.nan
         )  # fill_value
-    
 
 
 data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "interp_data")
@@ -69,6 +68,7 @@ GRID_INT.bounds_error = False
 # Convert the regular grid interpolator to a
 # Cartesian Grid Interpolator because it is much faster
 GRID_INT = CartesianGridInterpolator(GRID_INT.grid, GRID_INT.values, method="cubic")
+
 
 class LevyStableInterp:
     """
@@ -178,7 +178,8 @@ def _ll(returns_data, x, display_progress):
 def _gen_levy_fit(returns_data, prob=None, display_progress=True):
     """
         Routine to fit a generalised Levy Stable distribution to a set of data sets with
-        weights using the BOBYQA algorithm of Powell (https://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf)
+        weights using the BOBYQA algorithm of Powell
+        (https://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf)
         This routine does not require derivatives
 
     Note that this seems to alight on grid points of the interpolated values and

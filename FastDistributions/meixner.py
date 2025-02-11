@@ -9,8 +9,8 @@ Meixner(a, b, m1, d1) + Meixner(a, b, m2, d2) = Meixner*a, b, m1+m2, d1+d2)
 
 import numpy as np
 import pybobyqa
-from scipy.stats import uniform, rv_continuous, FitError
-from scipy.special import gamma, gammaln, psi, polygamma
+from scipy.stats import rv_continuous, FitError
+from scipy.special import gamma, gammaln, psi
 from .stat_functions import _basestats
 
 LOC_VAR = 3
@@ -321,7 +321,8 @@ def _meixner_fit(returns_data, prob=None, display_progress=True):
         print("Initial Log Likelihood")
         print(ll_func(init_x))
     soln = pybobyqa.solve(ll_func, init_x, bounds=(lower, upper))
-    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that ROUNDOFF_LIMITED results are usually useful so I'm going to assume they are
+    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that 
+    #  ROUNDOFF_LIMITED results are usually useful so I'm going to assume they are
     #  print("")
     #  print("Solution xmin = %s" % str(soln.x))
     #  print("Objective value f(xmin) = %.10g" % (soln.fun))
