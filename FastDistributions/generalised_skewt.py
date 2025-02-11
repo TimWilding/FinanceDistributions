@@ -118,6 +118,10 @@ class GeneralisedSkewT(rv_continuous):
     def _pdf(self, x):
         return np.exp(self._logpdf(x))
 
+    # TODO: Override this if you want a custom CDF function
+    # def _cdf(self, x):
+    #    return np.nan
+
     def _var(self):
         if self.n <= 2:
             return np.Inf
@@ -135,10 +139,12 @@ class GeneralisedSkewT(rv_continuous):
             self.ƛ * v * gamma(2 * p_inv) * gamma(q - p_inv) / gamma(p_inv) / gamma(q)
         )
         return self.μ + lam_adj * self.σ
-    
+
     def _stats(self):
+        # TODO: implement skewness and kurtosis calculations
+        # see Wikipedia
         return _basestats(self)
-    
+
     def qtile(self, prob):
         p = self.k
         q = self.n / self.k
@@ -245,24 +251,26 @@ def _gen_skewt_fit(returns_data, prob=None, display_progress=True):
 
     # NLopt function must return a gradient even if algorithm is derivative-free
     # - this function will return an empty gradient
-    ll_func = lambda x: -np.sum(
-        wt_prob
-        * generalised_skewt_loglikelihood(
-            returns_data,
-            x[LOC_VAR],
-            x[SCALE_VAR],
-            x[SKEW_VAR],
-            np.tan(x[K_VAR]),
-            np.tan(x[N_VAR]),
+    def ll_func(x):
+        return -np.sum(
+                wt_prob
+                * generalised_skewt_loglikelihood(
+                returns_data,
+                x[LOC_VAR],
+                x[SCALE_VAR],
+                x[SKEW_VAR],
+                np.tan(x[K_VAR]),
+                np.tan(x[N_VAR]),
+            )
         )
-    )
     if display_progress:
         print("Fitting Generalised Skew-T Distribution")
         print("=======================================")
         print("Initial Log Likelihood")
         print(ll_func(init_x))
     soln = pybobyqa.solve(ll_func, init_x, bounds=(lower, upper))
-    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that ROUNDOFF_LIMITED results are usually useful so I'm going to assume they are
+    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that 
+    #  ROUNDOFF_LIMITED results are usually useful so I'm going to assume they are
     #  print("")
     #  print("Solution xmin = %s" % str(soln.x))
     #  print("Objective value f(xmin) = %.10g" % (soln.fun))

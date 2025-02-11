@@ -221,6 +221,7 @@ class EntropyDistFit:
         self.grad = self.wt_data.T @ vandermonde_matrix(self.ret_data, npoly - 1)
         # Calculate the vandermonde matrix for the Gauss-Legendre quadrature
         self.v_xvals = vandermonde_matrix(self.x_vals, npoly - 1)
+        self.hess_struct = self.hessianstructure()
 
     def objective(self, ƛ):
         #
@@ -297,12 +298,14 @@ class EntropyDistFit:
         wt_s = np.sqrt(pdf_vals * self.x_wts)
         #       g = vandermonde_matrix(self.x_vals, m)
         wt_g = self.v_xvals.T * wt_s
+        # https://stackoverflow.com/questions/43453707/numpy-dot-too-clever-about-symmetric-multiplications
+        # suggests that SYRK is being used for this multiplication
+        # because numpy is aware it's symmetric
         con_hess = wt_g @ wt_g.T
 
         hess = obj_factor * obj_hess + lagrange[0] * con_hess
-        row, col = self.hessianstructure()
 
-        return hess[row, col]
+        return hess[self.hess_struct[0], self.hess_struct[1]]
 
 
 def _entropy_fit(
