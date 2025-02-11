@@ -80,11 +80,11 @@ interp = RegularGridInterpolator(
 # pdf_vals = f_ll_levy(alphag, betag, xg)
 # print('Grid calc time = {0} s'.format(time.time()-start))
 # interp = RegularGridInterpolator((alpha_vals, beta_vals, x_vals), pdf_vals)
-with open("data\ll_levy_stable_interp.pickle", "wb") as handle:
+with open(r'data\ll_levy_stable_interp.pickle', "wb") as handle:
     pickle.dump(interp, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Split the file into 5 so we can handle it
-file_split("data\ll_levy_stable_interp.pickle", 5)
+file_split(r'data\ll_levy_stable_interp.pickle', 5)
 
 # We should also run some statistics on the rate of change in the function values
 # across the grid
@@ -96,8 +96,8 @@ file_split("data\ll_levy_stable_interp.pickle", 5)
 
 test_vals = np.abs(
     parallel_pdf_vals[:, :, 2:]
-    + parallel_pdf_vals[:, :, 0 : N_PTS - 3]
-    - parallel_pdf_vals[:, :, 1 : N_PTS - 2]
+    + parallel_pdf_vals[:, :, 0:(N_PTS - 3)]
+    - parallel_pdf_vals[:, :, 1:(N_PTS - 2)]
 )
 # Test out the function
 alpha_test = 1.75

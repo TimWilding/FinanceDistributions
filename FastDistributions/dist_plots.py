@@ -104,7 +104,7 @@ def plot_reg_errors(
     positions1 = np.arange(num_vars)
     positions2 = [pos + bar_width for pos in positions1]
     # Create the bar chart
-    bars1 = ax.bar(
+    _ = ax.bar(
         positions1,
         coefficients1,
         yerr=errors1,
@@ -116,7 +116,7 @@ def plot_reg_errors(
         ecolor="b",
         snap=False,
     )
-    bars2 = ax.bar(
+    _ = ax.bar(
         positions2,
         coefficients2,
         yerr=errors2,
@@ -197,6 +197,8 @@ def plot_mahal_dist(mahal_dist, dates, num_assets, title, cutoff=0.95, ax=None):
     ax.axhline(y=chisq_cutoff, color="gray", linestyle="--")
     ax.set_ylim([0.0, np.max(mahal_dist)])
     ax.set_title(title)
+    if show:
+        plt.show()
 
 
 def plot_multi_function(

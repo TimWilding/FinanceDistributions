@@ -5,17 +5,19 @@ a Normal distribution is the distribution with the maximum entropy. This can be 
 to the situation with higher moments and has solutions where the pdf is the exponential
 of a polynomial function.
 """
+
 import numpy as np
 from scipy.special import roots_legendre
 from scipy.optimize import minimize, NonlinearConstraint, Bounds
-from scipy.stats import norm, rv_continuous, FitError
+from scipy.stats import rv_continuous, FitError
+from typing import Any
 
 
 def gauss_legendre_sample(n):
     """
     This routine returns a sample of x values and weights
     to use when calculating the integral of a function between
-    -infinity and +infinity. The integral is approximated 
+    -infinity and +infinity. The integral is approximated
     by the sum of the weights * the function value at each x
 
     For a function f, the integral is approx:
@@ -38,8 +40,8 @@ def gauss_legendre_sample(n):
 
 def vandermonde_matrix(x, m=4, k=0):
     """
-    Constructs a Vandermonde matrix. Each column of the 
-    vandermonde matrix contains the values of x raised to the 
+    Constructs a Vandermonde matrix. Each column of the
+    vandermonde matrix contains the values of x raised to the
     power i
 
     Args:
@@ -80,7 +82,7 @@ class EntropyDistribution(rv_continuous):
     scipy.stats.distribution objects. Entropy Distributions have a polynomial
     log-likelihood and characterise the returns distribution that maximises
     entropy given knowledge of a set number of moments. In the case of 2 moments,
-    this is the classical Normal distribution, but this routine can handle 
+    this is the classical Normal distribution, but this routine can handle
     distributions that have a higher number of moments such as Skew & Kurtosis
     and is designed to handle situations such as financial data which are known
     to have several higher moments.
@@ -141,7 +143,7 @@ class EntropyDistribution(rv_continuous):
     def _mean(self):
         return self._mu
 
-    def _stats(self):
+    def _stats(self: Any) -> None:
         return None
 
     @staticmethod
@@ -336,8 +338,8 @@ def _entropy_fit(
         wt_prob = np.ones(npts) / npts
     else:
         wt_prob = prob
-    mean_dist = np.average(returns_data, weights=wt_prob)
-    var_dist = np.cov(returns_data, aweights=wt_prob)
+    # mean_dist = np.average(returns_data, weights=wt_prob)
+    # var_dist = np.cov(returns_data, aweights=wt_prob)
     nlc = NonlinearConstraint(
         ent_fit.constraints, 1, 1, jac=ent_fit.jacobian, hess=ent_fit._constrainthessian
     )
