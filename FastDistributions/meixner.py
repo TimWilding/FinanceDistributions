@@ -220,9 +220,9 @@ class Meixner(rv_continuous):
         return mean
 
     #  CDF doesn't have a closed form solution
-    #def _cdf(self, x):
+    # def _cdf(self, x):
     #    return np.nan
-    
+    #
     # TODO: implement skewness and kurtosis calculations
     # see "Simulation and Estimation of the Meixner Distribution"
     # Grigoletto & Provasi, 2008, Communications in Statistics - Simulation

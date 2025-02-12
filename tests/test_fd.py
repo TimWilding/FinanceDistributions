@@ -142,9 +142,7 @@ def test_correl():
         .rename({"EndOfMonth": "Date"})
     )
     df_month.columns = ["Name", "Date", "LogReturn"]
-    _ = fd.rolling_backtest(
-        df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS
-    )
+    _ = fd.rolling_backtest(df_month, calc_adj_corr, WINDOW_YEARS, BACKTEST_YEARS)
 
 
 def test_new_priips_aex():
@@ -176,6 +174,7 @@ def test_robust_correl():
     np.testing.assert_approx_equal(nu, 4.451310494728308, 4)
     td = fd.TDist(samp_ave, samp_covar, nu)
     x = td.simulate(1000)
+    print(np.mean(x, axis=0))
     _, _ = td.mahal_dist(pivot_df.values)
     _ = td.cumdf(pivot_df.values)
     _ = fd.corr_conv(samp_covar)
@@ -402,10 +401,29 @@ def test_expected_shortfall():
     np.testing.assert_approx_equal(es_tail, -5.344663974593491, 3)
 
 
+def approx_stats_tests(dist):
+    """
+    use Gauss-Legendre quadrature to estimate
+    mean and standard deviation of a particular
+    distribution
+    """
+    (x_vals, x_wts) = fd.gauss_legendre_sample(1000)
+    mean = dist.mean()
+    sd = dist.std()
+    mean_est = np.sum(
+        x_wts * dist.pdf(x_vals) * x_vals
+    )  # Use numerical integration to test the mean of the distribution
+    sd_est = np.sqrt(np.sum(x_wts * dist.pdf(x_vals) * x_vals**2) - mean_est * mean_est)
+    np.testing.assert_approx_equal(mean, mean_est, 1e-6)
+    np.testing.assert_approx_equal(sd, sd_est, 1e-6)
+    return
+
+
 def test_fit_johnson():
     """
     Test the Johnson SU Distribution - fitting and statistics
     """
+
     def pdf_su_shape(x, gamma, delta):
         return fd.JohnsonSU(gamma, delta, 0, 1.0).pdf(x)
 
@@ -459,18 +477,9 @@ def test_fit_johnson():
     df_ret = fd.get_test_data()
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
     jsu_fit = fd.JohnsonSU.fitclass(sp_ret)
-    print(jsu_fit.std())
-    (x_vals, x_wts) = fd.gauss_legendre_sample(1000)
-    mean = jsu_fit.mean()
-    sd = jsu_fit.std()
-    mean_est = np.sum(
-        x_wts * jsu_fit.pdf(x_vals) * x_vals
-    )  # Use numerical integration to test the mean of the distribution
-    sd_est = np.sqrt(
-        np.sum(x_wts * jsu_fit.pdf(x_vals) * x_vals**2) - mean_est * mean_est
-    )
-    np.testing.assert_approx_equal(mean, mean_est, 1e-6)
-    np.testing.assert_approx_equal(sd, sd_est, 1e-6)
+
+    approx_stats_tests(jsu_fit)
+
     norm_mod = norm.fit(sp_ret)
     norm_fit = norm(norm_mod[0], norm_mod[1])
     dict_pdf = {
@@ -481,6 +490,64 @@ def test_fit_johnson():
     s = fd.edf_stats(sp_ret, jsu_fit)
     print(s)
     np.testing.assert_approx_equal(s[0], 1.1395746330408656, 1e-6)
+
+
+def cdf_testing(dist, test_val):
+    """
+    Test the cdf of a distribution
+    """
+    cdf = dist.cdf(test_val)
+    cdf_approx = quad(dist.pdf, -np.inf, test_val)[0]
+    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
+    return
+
+
+def test_generalised_skewt():
+    """
+    Short tests of the Generalised Skew-T distribution
+    """
+    gsd = fd.GeneralisedSkewT(0, 1.0, 0.2, 1, 1000)
+    gsd_skew = fd.GeneralisedSkewT(0, 1.0, 0.2, 2.0, 1000)
+
+    lst_dist = {
+        "GSD": [gsd.pdf, "r--"],
+        "GSD_Skew": [gsd_skew.pdf, "b--"],
+        "Normal": [norm.pdf, "k-"],
+    }
+    fd.plot_multi_function(
+        lst_dist,
+        y_label="Probability Density",
+        x_lim=[-10.0, 10.0],
+        y_log_scale=False,
+        title="Generalised Skew-T",
+    )
+    df_ret = fd.get_test_data()
+    sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
+
+    gsd_fit = fd.GeneralisedSkewT.fitclass(sp_ret)
+
+    cdf_testing(gsd_fit, 0.9)
+    cdf_testing(gsd_fit, -1.0)
+    cdf_testing(gsd_fit, 1.0)
+
+    cdf_testing(gsd_skew, 3.5)
+    cdf_testing(gsd_skew, -3.5)
+    cdf_testing(gsd_skew, 0.0)
+
+    x = np.linspace(-10, 10, 1000)
+    cdf_vals = gsd_fit.cdf(x)
+    plt.plot(x, cdf_vals)
+
+    p = np.linspace(0.01, 0.99, 100)
+    x = gsd_fit.ppf(p)
+    plt.plot(x, p, color="r")
+    plt.show()
+
+
+#    df = pd.DataFrame({'p': p, 'x': x})
+#    df_csv = pd.DataFrame({'x': x, 'cdf': cdf_vals})
+#    df_csv.to_csv("gsd_cdf.csv")
+#    df.to_csv("gsd_prob.csv")
 
 
 if __name__ == "__main__":

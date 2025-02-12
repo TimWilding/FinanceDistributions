@@ -5,6 +5,7 @@ Contains Mean-Variance Optimisation and other variants of portfolio optimisation
 import cvxpy as cp
 import numpy as np
 import pandas as pd
+#from typing import Tuple
 
 
 def get_weighted_stats(sample_weights, sample_returns, annualise=52):
@@ -35,7 +36,7 @@ def get_optimal_sharpe_pf(expected_returns, covariances):
     routine - in this case, the constraint is that
     all assets have positive weights
     (see, e.g., https://quant.stackexchange.com/questions/39137/how-can-i-find-the-portfolio-with-maximum-sharpe-ratio-using-lagrange-multipli/39157#39157)
-    """
+    """ # noqa: E501
     mu = expected_returns
     sigma = covariances
     num_assets = mu.shape[0]

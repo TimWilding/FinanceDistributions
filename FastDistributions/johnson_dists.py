@@ -137,12 +137,11 @@ class JohnsonSU(rv_continuous):
         cdf = 0.5 * (1 + erf(transformed / np.sqrt(2)))
         return cdf
 
-    #TODO: implement _ppf function
+    # TODO: implement _ppf function
     # def _ppf(self, q):
     #     return _johnson_su_ppf(q, self.gamma, self.delta, self.xi, self.lambd)
-    
     def _stats(self):
-        #TODO: Implement skewness and kurtosis calculations
+        # TODO: Implement skewness and kurtosis calculations
         return _basestats(self)
 
     @staticmethod

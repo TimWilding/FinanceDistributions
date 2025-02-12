@@ -38,7 +38,7 @@ def adjusted_correl(X, lag=1):
     doesn't account for any autocorrelation in the returns of a single
     series. See Scholes & Williams 1977 for details of this method
 
-    CONSIDER USING Kevin Sheppard's MFE TOOLBOX    
+    CONSIDER USING Kevin Sheppard's MFE TOOLBOX
     """
     T = X.shape[0]
     p = X.shape[1]
@@ -46,11 +46,11 @@ def adjusted_correl(X, lag=1):
     for i in range(p):
         Z = np.zeros((T - 2 * lag, 1 + 2 * lag))
 
-        Z[:, 0] = X[lag:(T - lag), i]  # Synchronous returns of first index
+        Z[:, 0] = X[lag : (T - lag), i]  # Synchronous returns of first index
 
         for j in range(1, lag + 1):
-            Z[:, 2 * j - 1] = X[(lag + j):(T - lag + j), i]  # j-lagged returns
-            Z[:, 2 * j] = X[(lag - j):(T - lag - j), i]  # j-leading returns
+            Z[:, 2 * j - 1] = X[(lag + j) : (T - lag + j), i]  # j-lagged returns
+            Z[:, 2 * j] = X[(lag - j) : (T - lag - j), i]  # j-leading returns
 
         # Fill in the lower-diagonal
         if i < p - 1:
@@ -60,7 +60,7 @@ def adjusted_correl(X, lag=1):
             sig_y = np.std(Y, axis=0)
             sig_x = np.std(Z[:, 0])
             correl = sig_x * (B_true / sig_y)
-            corr_mat[(i + 1):p, i] = correl
+            corr_mat[(i + 1) : p, i] = correl
     return nearest_pos_def(corr_mat + corr_mat.T)
 
 
@@ -92,7 +92,7 @@ def newey_adj_cov(X, lag=1, demean=True):
         p = int(0.75 * t ** (1 / 3))
     for j in range(1, p + 1):
         w = 1 - (float(j) / float(p + 1))
-        gamma_lag = np.dot(X[0 : t - j, :].T, X[j:t, :])
+        gamma_lag = np.dot(X[0:(t - j), :].T, X[j:t, :])
         gamma = gamma + w * (gamma_lag + gamma_lag.T)
     return gamma / t
 

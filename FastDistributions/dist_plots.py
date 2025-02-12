@@ -294,6 +294,35 @@ def plot_function(
     plt.xlim([t_min, t_max])
     plt.show()
 
+def _show_qq_labels(ax, nbins, data_pctiles, fn_pctiles, pctiles, xlim):
+    """
+    Show labels on a q-q plot - this is a helper function
+    """
+    for i in range(nbins):
+        if xlim is None:
+            # Adjust fontsize and position as needed
+            ax.text(
+                    data_pctiles[i],
+                    fn_pctiles[i],
+                    f"{pctiles[i]:0.2f}",
+                    fontsize=6,
+                    ha="right",
+                    va="bottom",
+                )
+        else:
+            if (
+                (data_pctiles[i] < xlim[1])
+                & (data_pctiles[i] > xlim[0])
+                & (fn_pctiles[i] < xlim[1])
+                & (fn_pctiles[i] > xlim[0])
+            ):
+                ax.text(
+                    fn_pctiles[i],
+                    data_pctiles[i],
+                    f"{pctiles[i]:0.2f}%",
+                    fontsize=6,
+                    ha="right",
+                )
 
 def plot_qq(
     data,
@@ -344,32 +373,7 @@ def plot_qq(
             markersize=4,
         )
         if show_labels:
-            for i in range(nbins):
-                if xlim is None:
-                    # Adjust fontsize and position as needed
-                    ax.text(
-                        data_pctiles[i],
-                        fn_pctiles[i],
-                        f"{pctiles[i]:0.2f}",
-                        fontsize=6,
-                        ha="right",
-                        va="bottom",
-                    )
-                else:
-                    if (
-                        (data_pctiles[i] < xlim[1])
-                        & (data_pctiles[i] > xlim[0])
-                        & (fn_pctiles[i] < xlim[1])
-                        & (fn_pctiles[i] > xlim[0])
-                    ):
-                        ax.text(
-                            fn_pctiles[i],
-                            data_pctiles[i],
-                            f"{pctiles[i]:0.2f}%",
-                            fontsize=6,
-                            ha="right",
-                        )
-
+            _show_qq_labels(ax, nbins, data_pctiles, fn_pctiles, pctiles, xlim)
     pad_val = 0.05
     x_min = x_min - pad_val * (x_max - x_min)
     x_max = x_max + pad_val * (x_max - x_min)
