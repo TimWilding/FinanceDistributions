@@ -46,11 +46,11 @@ def adjusted_correl(X, lag=1):
     for i in range(p):
         Z = np.zeros((T - 2 * lag, 1 + 2 * lag))
 
-        Z[:, 0] = X[lag : (T - lag), i]  # Synchronous returns of first index
+        Z[:, 0] = X[lag:(T - lag), i]  # Synchronous returns of first index
 
         for j in range(1, lag + 1):
-            Z[:, 2 * j - 1] = X[(lag + j) : (T - lag + j), i]  # j-lagged returns
-            Z[:, 2 * j] = X[(lag - j) : (T - lag - j), i]  # j-leading returns
+            Z[:, 2 * j - 1] = X[(lag + j):(T - lag + j), i]  # j-lagged returns
+            Z[:, 2 * j] = X[(lag - j):(T - lag - j), i]  # j-leading returns
 
         # Fill in the lower-diagonal
         if i < p - 1:
@@ -60,7 +60,7 @@ def adjusted_correl(X, lag=1):
             sig_y = np.std(Y, axis=0)
             sig_x = np.std(Z[:, 0])
             correl = sig_x * (B_true / sig_y)
-            corr_mat[(i + 1) : p, i] = correl
+            corr_mat[(i + 1):p, i] = correl
     return nearest_pos_def(corr_mat + corr_mat.T)
 
 
@@ -173,6 +173,7 @@ def corr_conv(cov_mat):
     corr_mat = cov_mat / np.sqrt(np.outer(sig, sig))
 
     return corr_mat
+
 
 def cov_from_correl(correl_mat, sigma):
     """

@@ -294,6 +294,7 @@ def plot_function(
     plt.xlim([t_min, t_max])
     plt.show()
 
+
 def _show_qq_labels(ax, nbins, data_pctiles, fn_pctiles, pctiles, xlim):
     """
     Show labels on a q-q plot - this is a helper function
@@ -323,6 +324,7 @@ def _show_qq_labels(ax, nbins, data_pctiles, fn_pctiles, pctiles, xlim):
                     fontsize=6,
                     ha="right",
                 )
+
 
 def plot_qq(
     data,
