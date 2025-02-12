@@ -6,8 +6,8 @@ Implementation of generalised Skew T Log Likelihood
 import math
 import numpy as np
 import pybobyqa
-from scipy.special import gamma, loggamma, beta
-from scipy.stats import uniform, rv_continuous, FitError
+from scipy.special import gamma, loggamma
+from scipy.stats import uniform, rv_continuous, FitError, beta
 from .stat_functions import _basestats
 
 LOC_VAR = 0
@@ -118,9 +118,8 @@ class GeneralisedSkewT(rv_continuous):
     def _pdf(self, x):
         return np.exp(self._logpdf(x))
 
-    # TODO: Override this if you want a custom CDF function
-    # def _cdf(self, x):
-    #    return np.nan
+    # TODO: Implemeent skewness and kurtosis calculations
+    # see  Theodossiou (1998)
 
     def _var(self):
         if self.n <= 2:
@@ -145,24 +144,69 @@ class GeneralisedSkewT(rv_continuous):
         # see Wikipedia
         return _basestats(self)
 
-    def qtile(self, prob):
+    def _ppf(self, q):
+        """
+        Percent point function (inverse of cdf — percentiles).
+        """
+        pr = q.copy()
         p = self.k
-        q = self.n / self.k
+        qloc = self.n / self.k
         p_inv = 1.0 / p
-        ƛ = self.ƛ
-        σ = self.σ / (q ** (p_inv) * var_adjustment_sgt(ƛ, p_inv, q))
-        out_sign = 1.0
-        if prob > (1 - ƛ) / 2:
-            prob = 1.0 - prob
-            ƛ = -ƛ
-            out_sign = -1
+        ƛ = self.ƛ * np.ones(pr.shape)
+        σ = self.σ / (qloc ** (p_inv) * var_adjustment_sgt(ƛ, p_inv, qloc))
+        out_sign = np.ones(pr.shape)
+
+        flip = pr > (1 - ƛ) / 2
+
+        pr[flip] = 1.0 - pr[flip]
+        ƛ[flip] = -ƛ[flip]
+        out_sign[flip] = -1
         out = (
             σ
             * (ƛ - 1)
-            * (1 / (q * beta(p_inv, q).quantile(1 - 2 * prob / (1 - ƛ))) - 1 / q)
+            * (1 / (qloc * beta(p_inv, qloc).ppf(1 - 2 * pr / (1 - ƛ))) - 1 / qloc)
             ** (-p_inv)
         )
         out = out_sign * out + self.μ
+        return out
+
+    def _cdf(self, x):
+        """
+        Cumulative distribution function.
+        """
+        x_e = x - self.μ
+        p = self.k
+        q = self.n / self.k
+        p_inv = 1.0 / p
+
+        flip = x_e > 0
+
+        if isinstance(x, (float, np.float64)):
+            ƛ = self.ƛ
+            # Handle single float
+            if flip:
+                ƛ = -ƛ
+                x_e = -x_e
+        elif isinstance(x, np.ndarray):
+            # Handle numpy array
+            ƛ = self.ƛ * np.ones(x.shape)
+            ƛ[flip] = -ƛ[flip]
+            x_e[flip] = -x_e[flip]
+        else:
+            raise TypeError("Must be a float or numpy array")
+
+        σ = self.σ / (q ** (p_inv) * var_adjustment_sgt(ƛ, p_inv, q))
+
+        out = (1 - ƛ) / 2 + ((ƛ - 1) / 2) * beta(p_inv, q).cdf(
+            1 / (1 + q * (σ * (1 - ƛ) / (-x_e)) ** p)
+        )
+
+        if isinstance(x, (float, np.float64)):
+            # Handle single float
+            if flip:
+                out = 1 - out
+        else:
+            out[flip] = 1 - out[flip]
         return out
 
     @staticmethod
@@ -263,13 +307,14 @@ def _gen_skewt_fit(returns_data, prob=None, display_progress=True):
                 np.tan(x[N_VAR]),
             )
         )
+
     if display_progress:
         print("Fitting Generalised Skew-T Distribution")
         print("=======================================")
         print("Initial Log Likelihood")
         print(ll_func(init_x))
     soln = pybobyqa.solve(ll_func, init_x, bounds=(lower, upper))
-    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that 
+    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that
     #  ROUNDOFF_LIMITED results are usually useful so I'm going to assume they are
     #  print("")
     #  print("Solution xmin = %s" % str(soln.x))

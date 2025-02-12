@@ -137,6 +137,10 @@ class JohnsonSU(rv_continuous):
         cdf = 0.5 * (1 + erf(transformed / np.sqrt(2)))
         return cdf
 
+    #TODO: implement _ppf function
+    # def _ppf(self, q):
+    #     return _johnson_su_ppf(q, self.gamma, self.delta, self.xi, self.lambd)
+    
     def _stats(self):
         #TODO: Implement skewness and kurtosis calculations
         return _basestats(self)
@@ -220,15 +224,15 @@ def _johnson_su_fit(returns_data, prob=None, display_progress=True):
 
     def ll_func(x):
         return -np.sum(
-               wt_prob
-               * log_pdf_johnson_su(
-               returns_data,
-               x[0],
-               x[1],
-               x[2],
-               x[3],
+                   wt_prob
+                   * log_pdf_johnson_su(
+                   returns_data,
+                   x[0],
+                   x[1],
+                   x[2],
+                   x[3],
+                )
             )
-        )
   
     if display_progress:
         print("Fitting Johnson SU Distribution")
