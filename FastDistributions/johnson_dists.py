@@ -113,22 +113,48 @@ class JohnsonSU(rv_continuous):
     def _logpdf(self, x):
         return log_pdf_johnson_su(x, self.gamma, self.delta, self.xi, self.lambd)
 
-    def _var(self):
+    def _omegastats(self):
         m = np.exp(1.0 / self.delta**2)
-        var = (
-            (self.lambd**2 / 2)
-            * (m - 1)
-            * (m * np.cosh(2 * self.gamma / self.delta) + 1)
-        )
+        omega = self.gamma / self.delta
+        return m, omega
+
+    def _var(self):
+        m, omega = self._omegastats()
+        var = (self.lambd**2 / 2) * (m - 1) * (m * np.cosh(2 * omega) + 1)
         return var
 
     def std(self):
         return np.sqrt(self.var())
 
     def _mean(self):
-        m = np.exp(0.5 / self.delta**2)
-        mean = self.xi - self.lambd * m * np.sinh(self.gamma / self.delta)
+        m, omega = self._omegastats()
+        mean = self.xi - self.lambd * np.sqrt(m) * np.sinh(omega)
         return mean
+
+    def _skew(self):
+        m, omega = self._omegastats()
+        skew = (
+            -self.lambd**3
+            * np.sqrt(m)
+            * (m - 1) ** 2
+            * (m * (m + 2) * np.sinh(3 * omega) + 3 * np.sinh(omega))
+            / (4 * self._var() ** 1.5) 
+        )
+        return skew
+
+    def _kurtosis(self):
+        m, omega = self._omegastats()
+        kurt = (
+            self.lambd**4
+            * (m - 1) ** 2
+            * (
+                m**2 * (m**4 + 2 * m**3 + 3 * m**2 - 3) * np.cosh(4 * omega)
+                + 4 * m**2 * (m + 2) * np.cosh(2 * omega)
+                + 3 * (2 * m + 1)
+            )
+            / (8 * self._var()**2)
+        )
+        return kurt
 
     def _cdf(self: Any, x: Any) -> Any:
         z = (x - self.xi) / self.lambd
@@ -138,13 +164,17 @@ class JohnsonSU(rv_continuous):
         return cdf
 
     def _ppf(self, q, *args, **kwargs):
-        z  = np.sqrt(2)*erfinv(2*q-1)
+        z = np.sqrt(2) * erfinv(2 * q - 1)
         m = (z - self.gamma) / self.delta
         return self.xi + self.lambd * np.sinh(m)
 
     def _stats(self):
-        # TODO: Implement skewness and kurtosis calculations
-        return _basestats(self)
+        mean = self._mean()
+        variance = self._var()
+    # Johnson SU skew and kurtosis are complex; you can use numerical methods
+        skew = self._skew()
+        kurt = self._kurtosis()
+        return mean, variance, skew, kurt
 
     @staticmethod
     def fit(returns_data, prob=None, display_progress=True):
@@ -225,16 +255,16 @@ def _johnson_su_fit(returns_data, prob=None, display_progress=True):
 
     def ll_func(x):
         return -np.sum(
-                   wt_prob
-                   * log_pdf_johnson_su(
-                   returns_data,
-                   x[0],
-                   x[1],
-                   x[2],
-                   x[3],
-                )
+            wt_prob
+            * log_pdf_johnson_su(
+                returns_data,
+                x[0],
+                x[1],
+                x[2],
+                x[3],
             )
-  
+        )
+
     if display_progress:
         print("Fitting Johnson SU Distribution")
         print("=======================================")
