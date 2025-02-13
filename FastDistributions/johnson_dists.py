@@ -9,7 +9,7 @@ unbounded version of the Johnson SB distribution.
 import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
-from scipy.special import erf
+from scipy.special import erf, erfinv
 from typing import Any
 from .stat_functions import _basestats
 
@@ -137,9 +137,11 @@ class JohnsonSU(rv_continuous):
         cdf = 0.5 * (1 + erf(transformed / np.sqrt(2)))
         return cdf
 
-    # TODO: implement _ppf function
-    # def _ppf(self, q):
-    #     return _johnson_su_ppf(q, self.gamma, self.delta, self.xi, self.lambd)
+    def _ppf(self, q, *args, **kwargs):
+        z  = np.sqrt(2)*erfinv(2*q-1)
+        m = (z - self.gamma) / self.delta
+        return self.xi + self.lambd * np.sinh(m)
+
     def _stats(self):
         # TODO: Implement skewness and kurtosis calculations
         return _basestats(self)
