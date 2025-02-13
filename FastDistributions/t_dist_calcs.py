@@ -15,6 +15,7 @@ from scipy.special import gamma
 from scipy.stats import chi2
 
 from .correl_calcs import mahal_dist
+from .stat_functions import _print_progress
 
 MIN_DOF = 0.2
 MAX_DOF = 1000
@@ -230,8 +231,8 @@ class TDist:
         prev_ll = 0.0
         ll = 0.0
         delta_ll = 0.0
-        if display_progress:
-            print("Iteration    Nu      DeltaTau        LL            LL_target")
+        _print_progress(display_progress,
+                        "Iteration    Nu      DeltaTau        LL            LL_target")
 
         for iter_num in range(1, max_iters + 1):
 
@@ -270,10 +271,8 @@ class TDist:
             tau[tau > MAX_TAU] = MAX_TAU
 
             delta_tau = np.max(np.abs(tau - tau_prev))
-            if display_progress:
-                print(
-                    f"{iter_num}         {nu:7.2f} {delta_tau:7.2f}            {ll:7.2f}      {ll_target:7.2f}"
-                )
+            _print_progress(display_progress,
+                           f"{iter_num}         {nu:7.2f} {delta_tau:7.2f}            {ll:7.2f}      {ll_target:7.2f}")
 
             # Maximum Likelihood
             samp_ave, samp_covar = _wt_stats(tau, returns_data)
@@ -281,7 +280,7 @@ class TDist:
                 if np.abs(ll - ll_target) < tol:
                     break
 
-        if display_progress:
-            print(f"Total time taken: {time.time()-start} s")
+        _print_progress(display_progress,
+                        f"Total time taken: {time.time()-start} s")
 
         return (samp_ave, samp_covar, nu, tau)

@@ -28,6 +28,9 @@ def _bootstrap_sample(ret_data, trial_name, fn):
     x["trial"] = trial_name
     return x
 
+def _print_progress(display_progress, msg_str):
+    if display_progress:
+        print(msg_str)
 
 def parallel_bootstrap(
     ret_data,
@@ -68,8 +71,8 @@ def parallel_bootstrap(
         lst_bs.append(dict_opt)
 
     pool = ThreadPool(processes=threads)
-    if display_progress:
-        print("Starting bootstrap threads")
+    _print_progress(display_progress, "Starting bootstrap threads")
+
     for i in range(nbs):
         # Create BS pointers into dataset with size n
         sample_idx = np.random.choice(range(n), size=samp_size, replace=True)
@@ -79,8 +82,8 @@ def parallel_bootstrap(
         )
 
     elapsed_time = time.time() - start
-    if display_progress:
-        print(f"Started bootstrap iterations after {elapsed_time:.2f} s")
+    _print_progress(display_progress, 
+                    f"Started bootstrap iterations after {elapsed_time:.2f} s")
     cur_time = time.time()
     i = 0
     concat = False
@@ -92,12 +95,12 @@ def parallel_bootstrap(
         i += 1
         if (i % nskip == 0) & (i > 0):
             elapsed_time = time.time() - cur_time
-            if display_progress:
-                print(f"Completed {i}/{nbs} iterations ({elapsed_time:.2f} s)")
+            _print_progress(display_progress, 
+                            f"Completed {i}/{nbs} iterations ({elapsed_time:.2f} s)")
             cur_time = time.time()
 
-    if display_progress:
-        print(f"Bootstrap Completed = {(time.time()-start):.2f} s")
+    _print_progress(display_progress,
+                    f"Bootstrap Completed = {(time.time()-start):.2f} s")
     df_out = []
     if concat:
         df_out = pd.concat(lst_bs)

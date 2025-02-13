@@ -138,4 +138,3 @@ def expected_shortfall_tail_model(alpha, ξ, β, threshold_value, quantile: floa
     tail_prob = (1 - quantile) / (1 - alpha)
     es = es / tail_prob
     return threshold_value - es, threshold_value - var
-
