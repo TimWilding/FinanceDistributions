@@ -228,7 +228,6 @@ class Meixner(rv_continuous):
     # Grigoletto & Provasi, 2008, Communications in Statistics - Simulation
     # and Computation
 
-
     def _stats(self):
         return _basestats(self)
 
@@ -331,7 +330,7 @@ def _meixner_fit(returns_data, prob=None, display_progress=True):
         print("Initial Log Likelihood")
         print(ll_func(init_x))
     soln = pybobyqa.solve(ll_func, init_x, bounds=(lower, upper))
-    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that 
+    #  https://nlopt.readthedocs.io/en/latest/NLopt_Reference/ says that
     #  ROUNDOFF_LIMITED results are usually useful so I'm going to assume they are
     #  print("")
     #  print("Solution xmin = %s" % str(soln.x))

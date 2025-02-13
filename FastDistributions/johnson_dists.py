@@ -11,7 +11,6 @@ import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import erf, erfinv
 from typing import Any
-from .stat_functions import _basestats
 
 
 def log_pdf_johnson_sb(x, gamma, delta, xi, lambd):
@@ -138,7 +137,7 @@ class JohnsonSU(rv_continuous):
             * np.sqrt(m)
             * (m - 1) ** 2
             * (m * (m + 2) * np.sinh(3 * omega) + 3 * np.sinh(omega))
-            / (4 * self._var() ** 1.5) 
+            / (4 * self._var() ** 1.5)
         )
         return skew
 

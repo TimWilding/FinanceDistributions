@@ -54,7 +54,7 @@ def adjusted_correl(X, lag=1):
 
         # Fill in the lower-diagonal
         if i < p - 1:
-            Y = X[lag:(T - lag), i + 1 :]
+            Y = X[lag:(T - lag), (i + 1):]
             _, B, _, _ = ols_regress(Y, Z)
             B_true = np.sum(B, axis=0)
             sig_y = np.std(Y, axis=0)

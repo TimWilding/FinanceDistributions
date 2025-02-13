@@ -96,7 +96,7 @@ def get_stress_window(
 
     Note that there are suggestions tha the calculations have changed in the 2020 recommendations
     this is to prevent the unfavourable scenario being below the stress scenario
-    """
+    """ # noqa: E501
     n = returns.shape[0]
     if use_2020:
         print(

@@ -316,7 +316,7 @@ def _entropy_fit(
     max_iter=50000,
     x_toler=1e-10,
 ):
-    
+
     npts = returns_data.shape[0]
     if prob is None:
         wt_prob = np.ones(npts) / npts
