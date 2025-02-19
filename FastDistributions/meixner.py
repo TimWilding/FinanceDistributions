@@ -11,7 +11,6 @@ import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import gamma, gammaln, psi
-from .stat_functions import _basestats
 
 LOC_VAR = 3
 SCALE_VAR = 0
@@ -218,18 +217,28 @@ class Meixner(rv_continuous):
     def _mean(self):
         mean = self.mu + self.alpha * self.delta * np.tan(self.beta / 2)
         return mean
+    
+    def _skew(self):
+        # see eqn 1 in Grigoletto and Provasi, 2008
+        skew = np.sin(self.beta) / np.sqrt(self.delta*(np.cos(self.beta) + 1))
+        return skew
+
+    def _kurt(self):
+        kurt = 3 - ((np.cos(self.beta) - 2) / self.delta)
+        return kurt
 
     #  CDF doesn't have a closed form solution
     # def _cdf(self, x):
     #    return np.nan
     #
-    # TODO: implement skewness and kurtosis calculations
-    # see "Simulation and Estimation of the Meixner Distribution"
-    # Grigoletto & Provasi, 2008, Communications in Statistics - Simulation
-    # and Computation
+ 
 
     def _stats(self):
-        return _basestats(self)
+        mean = self._mean()
+        variance = self._var()
+        skew = self._skew()
+        kurt = self._kurt()
+        return mean, variance, skew, kurt
 
     #    def grad_pdf(self, x):
     #        return meixner_log_pdf_gradient(x, self.alpha, self.beta, self.delta, self.mu)#

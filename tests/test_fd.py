@@ -512,6 +512,84 @@ def test_fit_johnson():
     df_csv.to_csv("jsu_cdf.csv")
     df.to_csv("jsu_prob.csv")
 
+def test_fit_meixner():
+    """
+    Test the Miexner Distribution - fitting and statistics
+    """
+
+    def pdf_su_shape(x, beta, delta):
+        return fd.Meixner(beta, delta, 0, 2.0).pdf(x)
+
+    lst_dist = {
+        "beta = -2.0, delta = 1.0": [lambda x: pdf_su_shape(x, -2.0, 1.0), "r--"],
+        "beta = 0.0, delta = 1.0": [lambda x: pdf_su_shape(x, 0.0, 1.0), "b--"],
+        "beta = 1.5, delta = 1.0": [lambda x: pdf_su_shape(x, 1.5, 1.0), "g--"],
+        "Normal": [norm.pdf, "k-"],
+    }
+    fd.plot_multi_function(
+        lst_dist,
+        y_label="Probability Density",
+        x_lim=[-10.0, 10.0],
+        y_log_scale=False,
+        title="Meixner Distribution",
+    )
+# https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
+    def cdf_su_shape(x, beta, delta):
+        return fd.Meixner(beta, delta, 0, 2.0).cdf(x)
+
+    lst_dist = {
+        "beta = -2.0, delta = 1.0": [lambda x: cdf_su_shape(x, -2.0, 1.0), "r--"],
+        "beta = 0.0, delta = 1.0": [lambda x: cdf_su_shape(x, 0.0, 1.0), "b--"],
+        "beta = 1.5, delta = 1.0": [lambda x: cdf_su_shape(x, 1.5, 1.0), "g--"],
+        "Normal": [norm.cdf, "k-"],
+    }
+    fd.plot_multi_function(
+        lst_dist,
+        y_label="Cumulative Density",
+        x_lim=[-10.0, 10.0],
+        y_lim=[0.0, 1.0],
+        y_log_scale=False,
+        title="Meixner Distribution",
+    )
+
+#    jsu = fd.JohnsonSU(0.5, 0.05, 0, 1.0)
+#    test_val = 3
+#    cdf = jsu.cdf(test_val)
+#    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
+#    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
+
+#   jsu = fd.JohnsonSU(-1.1, 0.8, 0, 1.0)
+#   test_val = 0.5
+#    cdf = jsu.cdf(test_val)
+#    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
+#    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
+
+    df_ret = fd.get_test_data()
+    sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
+    meix_fit = fd.Meixner.fitclass(sp_ret)
+
+    approx_stats_tests(meix_fit)
+
+    norm_mod = norm.fit(sp_ret)
+    norm_fit = norm(norm_mod[0], norm_mod[1])
+    dict_pdf = {
+        "Normal Distribution": [norm_fit.pdf, "b-"],
+        "Meixner Distribution": [meix_fit.pdf, "y-"],
+    }
+    fd.plot_hist_fit(sp_ret, "SP 500", dict_pdf, 50, log_scale=True)
+    s = fd.edf_stats(sp_ret, meix_fit)
+    print(s)
+    np.testing.assert_approx_equal(s[0], 1.1395746330408656, 1e-6)
+
+    x = np.linspace(-10, 10, 1000)
+    cdf_vals = meix_fit.cdf(x)
+    plt.plot(x, cdf_vals)
+
+    p = np.linspace(0.01, 0.99, 100)
+    x_vals = meix_fit.ppf(p)
+    plt.plot(x_vals, p, color="r")
+    plt.show()
+
 
 def cdf_testing(dist, test_val):
     """

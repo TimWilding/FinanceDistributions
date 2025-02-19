@@ -6,8 +6,7 @@ import pandas as pd
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from scipy.stats import norm
-
-#  see https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html
+# see https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html
 from scipy.special import hermitenorm
 from .stat_functions import parallel_bootstrap
 
