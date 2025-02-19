@@ -1,6 +1,9 @@
 *.pkl
 *.pyc
 /.pytest_cache
+/.idea
+/cache
 /FastDistributions/__pycache__
+/tests/__pycache__
 /FastDistributions/.vscode
 /docs/build

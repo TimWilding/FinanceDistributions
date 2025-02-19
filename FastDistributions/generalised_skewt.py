@@ -1,6 +1,9 @@
 """
 Implementation of generalised Skew T Log Likelihood
 (see https://en.wikipedia.org/wiki/Skewed_generalized_t_distribution)
+This is mostly driven by Theodossiou, Financial Data
+and the Skewed Generalised T Distribution, 1998, Management
+Science
 """
 
 import math
@@ -67,17 +70,16 @@ def s_lambda(ƛ, pinv, q):
         )
         a_adj = np.exp(a_adj)
 
-    s_lambda = 1 + 3 * (ƛ**2) - 4 * (ƛ**2) * a_adj
-    return np.sqrt(np.maximum(s_lambda, 1e-20))
+    s = 1 + 3 * (ƛ**2) - 4 * (ƛ**2) * a_adj
+    return np.sqrt(np.maximum(s, 1e-20))
 
 
 def generalised_skewt_loglikelihood(x, μ, σ, ƛ, k, n):
     """
-    This function matches https://en.wikipedia.org/wiki/Skewed_generalized_t_distribution
-    but doesn't seem to match Theodossiou (1998). Written to match Theodossiou (1998). There
-    seems to be an error in the Wiki page!
+    This function is close to https://en.wikipedia.org/wiki/Skewed_generalized_t_distribution
+    Written to match Theodossiou (1998). There seems to be an error in the Wiki page!
     Valid Ranges
-          -1 < ƛ < 1
+     -1 < ƛ < 1
       n > 2
       k > 0
       σ > 0
@@ -114,7 +116,7 @@ def generalised_skewt_loglikelihood(x, μ, σ, ƛ, k, n):
 
     d = (np.abs(ε) / (v * σ * (1 + ƛ * np.sign(ε)))) ** p
 
-    # see https://math.stackexchange.com/questions/3922187/what-is-the-log-of-the-beta-function-how-can-it-be-simplified
+    # beta(x, y) = gamma(x) * gamma(y) / gamma(x+y)
     ll = (
         np.log(p)
         + loggamma(pinv + q)
@@ -130,7 +132,16 @@ def generalised_skewt_loglikelihood(x, μ, σ, ƛ, k, n):
 class GeneralisedSkewT(rv_continuous):
     """
     Class to represent Generalised Skew T distribution using the same form as the
-    scipy.stats.distribution objects.
+    scipy.stats.distribution objects. This distribution can represent a wide range
+    of distributions that have skewness and kurtosis that differ from the Normal
+    distributions. The distribution has three parameters that determine the shape
+    of the distribution in addition to the typical scale and location parameters
+
+    Typical Distributions
+      k = 2, Hansen Skew T
+      n -> ∞, Skewed Generalised Error Distribution
+      k = 1,  n -> ∞, Skewed Laplace Distribution
+      k = 2,  n -> ∞, Skewed Normal
     """
 
     def __init__(
@@ -156,8 +167,6 @@ class GeneralisedSkewT(rv_continuous):
     def _pdf(self, x):
         return np.exp(self._logpdf(x))
 
-    # TODO: Implemeent skewness and kurtosis calculations
-    # see  Theodossiou (1998)
 
     def _var(self):
         if self.n <= 2:
@@ -206,6 +215,7 @@ class GeneralisedSkewT(rv_continuous):
         p_inv = 1.0 / p
         s_l = 1.0 / s_lambda(self.ƛ, p_inv, q)
 
+        # TODO: robustify this loggamma for large p_inv, q
         mean_adj = (
             gamma(2 * p_inv)
             * gamma(q - p_inv)
@@ -219,6 +229,7 @@ class GeneralisedSkewT(rv_continuous):
 
         m2 = (1 + 3 * self.ƛ**2) * s_l**2
 
+        # TODO: robustify this loggamma for large p_inv, q
         m3 = (
             4
             * self.ƛ
@@ -232,6 +243,7 @@ class GeneralisedSkewT(rv_continuous):
             / np.sqrt(gamma(q - 2 * p_inv) ** 3)
         )
 
+        # TODO: robustify this loggamma for large p_inv, q
         m_adj = (
             gamma(5 * p_inv)
             * gamma(q - 4 * p_inv)

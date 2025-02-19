@@ -1,8 +1,9 @@
 """
-Meixner distribution has additional skewness and kurtosis parameters and has been used to model financial returns.
-The Meixner distribution is a generalisation of the https://en.wikipedia.org/wiki/Hyperbolic_secant_distribution
-Hyperbolic Secant Distribution. Miexner was a theoretical physicist.
-There is a general discussion of the distribution at https://reference.wolfram.com/language/ref/MeixnerDistribution.html
+Meixner distribution has additional skewness and kurtosis parameters and has been used to model
+financial returns. The Meixner distribution is a generalisation of the
+https://en.wikipedia.org/wiki/Hyperbolic_secant_distribution Hyperbolic Secant Distribution.
+Meixner was a theoretical physicist. There is a general discussion of the distribution at
+https://reference.wolfram.com/language/ref/MeixnerDistribution.html
 The Meixner distribution has the interesting property that it is closed under addition
 Meixner(a, b, m1, d1) + Meixner(a, b, m2, d2) = Meixner*a, b, m1+m2, d1+d2)
 """
@@ -19,7 +20,7 @@ SHAPE_VAR = 2
 
 
 def meixner_loglikelihood(
-    x, alpha: float = 1.0, beta: float = 0.0, delta: float = 1.0, μ: float = 0.0
+    x, alpha: float = 1.0, beta: float = 0.0, delta: float = 1.0, mu: float = 0.0
 ):
     """
     Calculate the log of the probability density of the Meixner distribution.
@@ -29,14 +30,14 @@ def meixner_loglikelihood(
         alpha (float): Scale parameter (alpha > 0).
         beta (float): Skewness parameter (|beta| < pi).
         delta (float): Shape parameter (delta > 0, controls kurtosis).
-        μ (float): Location parameter.
+        mu (float): Location parameter.
 
     Returns:
         float or np.ndarray: The log-PDF value(s) at x.
     """
     if alpha <= 0:
         raise ValueError("alpha must be positive.")
-    if not (-np.pi < beta < np.pi):
+    if not -np.pi < beta < np.pi:
         raise ValueError("beta must satisfy -pi < beta < pi.")
     if delta <= 0:
         raise ValueError("delta must be positive.")
@@ -47,8 +48,8 @@ def meixner_loglikelihood(
         - np.log(2 * alpha)
         - gammaln(2 * delta)
     )
-    log_exp_factor = beta * (x - μ) / alpha
-    arg = delta + 1j * (x - μ) / alpha
+    log_exp_factor = beta * (x - mu) / alpha
+    arg = delta + 1j * (x - mu) / alpha
     # the mpmath gamma function can
     # calculate gamma to a higher precision
     # it may be worth switching here.
@@ -80,7 +81,7 @@ def _meixner_log_pdf_gradient(x, alpha, beta, delta, mu):
     """
     if alpha <= 0:
         raise ValueError("alpha must be positive.")
-    if not (-np.pi < beta < np.pi):
+    if not -np.pi < beta < np.pi:
         raise ValueError("beta must satisfy -pi < beta < pi.")
     if delta <= 0:
         raise ValueError("delta must be positive.")
@@ -162,7 +163,8 @@ def _meixner_log_pdf_gradient(x, alpha, beta, delta, mu):
 
 #     # Mixed terms
 #     # (1, 4): alpha-mu
-#     hessian[0, 3] = beta / alpha**2 + 2 * imag_digamma / alpha**2 - 2 * np.imag(trigamma_z) * (x - mu) / alpha**3
+#     hessian[0, 3] = beta / alpha**2 + 2 * imag_digamma / alpha**2
+#                   - 2 * np.imag(trigamma_z) * (x - mu) / alpha**3
 #     hessian[3, 0] = hessian[0, 3]  # Symmetry
 
 #     # (1, 2): alpha-beta
@@ -183,7 +185,9 @@ def _meixner_log_pdf_gradient(x, alpha, beta, delta, mu):
 class Meixner(rv_continuous):
     """
     Class to represent the Meixner distribution using the same form as the
-    scipy.stats.distribution objects
+    scipy.stats.distribution objects. Meixner distribution has the usual
+    scale and location parameters. There are two additional parameters
+    that determine the shape of the distribution.
     """
 
     def __init__(self, beta, delta, loc: float = 0.0, scale: float = 1.0):
@@ -217,10 +221,10 @@ class Meixner(rv_continuous):
     def _mean(self):
         mean = self.mu + self.alpha * self.delta * np.tan(self.beta / 2)
         return mean
-    
+
     def _skew(self):
         # see eqn 1 in Grigoletto and Provasi, 2008
-        skew = np.sin(self.beta) / np.sqrt(self.delta*(np.cos(self.beta) + 1))
+        skew = np.sin(self.beta) / np.sqrt(self.delta * (np.cos(self.beta) + 1))
         return skew
 
     def _kurt(self):
@@ -231,7 +235,6 @@ class Meixner(rv_continuous):
     # def _cdf(self, x):
     #    return np.nan
     #
- 
 
     def _stats(self):
         mean = self._mean()
@@ -248,7 +251,7 @@ class Meixner(rv_continuous):
     @staticmethod
     def fit(x, prob=None, display_progress=True):
         """
-        Uses MLE to return Generalised Skew-T parameters this is
+        Uses MLE to return Meixner parameters this is
         set to be similar to fit in the scipy.stats package so
         it should raises a TypeError or ValueError if the input
         is invalid and a scipy.stats.FitError if fitting fails
@@ -267,18 +270,14 @@ class Meixner(rv_continuous):
     @staticmethod
     def fitclass(x, prob=None, display_progress=True):
         """
-        Uses MLE to return Generalised Skew-T class this is
+        Uses MLE to return Meixner class this is
         set to be similar to fit in the scipy.stats package so
         it should raises a TypeError or ValueError if the input
         is invalid and a scipy.stats.FitError if fitting fails
         or the fit produced would be invalid
         Returns
         -------
-        parameter_tuple : tuple of floats
-            Estimates for any shape parameters (if applicable), followed by
-            those for location and scale. For most random variables, shape
-            statistics will be returned, but there are exceptions (e.g.
-            ``norm``).
+        meixner : instance of Meixner class
         """
         sol = _meixner_fit(x, prob, display_progress)
         return Meixner(
@@ -288,7 +287,7 @@ class Meixner(rv_continuous):
 
 def _meixner_fit(returns_data, prob=None, display_progress=True):
     """
-        Routine to fit a generalised skew-t distribution to a set of data sets with
+        Routine to fit a Meixner distribution to a set of data sets with
         weights using the BOBYQA algorithm of Powell
     (https://www.damtp.cam.ac.uk/user/na/NA_papers/NA2009_06.pdf)
         This routine does not require derivatives
