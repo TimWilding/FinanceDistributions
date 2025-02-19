@@ -19,7 +19,6 @@ def _array_slice_sample(a, sample_idx, axis=0):
     """
     return a[(slice(None),) * (axis % a.ndim) + (sample_idx,)]
 
-
 def _bootstrap_sample(ret_data, trial_name, fn):
     """
     wrapper function for supplied bootstrap
@@ -31,6 +30,7 @@ def _bootstrap_sample(ret_data, trial_name, fn):
 def _print_progress(display_progress, msg_str):
     if display_progress:
         print(msg_str)
+
 
 def parallel_bootstrap(
     ret_data,
@@ -82,8 +82,9 @@ def parallel_bootstrap(
         )
 
     elapsed_time = time.time() - start
-    _print_progress(display_progress, 
-                    f"Started bootstrap iterations after {elapsed_time:.2f} s")
+    _print_progress(
+        display_progress, f"Started bootstrap iterations after {elapsed_time:.2f} s"
+    )
     cur_time = time.time()
     i = 0
     concat = False
@@ -95,12 +96,15 @@ def parallel_bootstrap(
         i += 1
         if (i % nskip == 0) & (i > 0):
             elapsed_time = time.time() - cur_time
-            _print_progress(display_progress, 
-                            f"Completed {i}/{nbs} iterations ({elapsed_time:.2f} s)")
+            _print_progress(
+                display_progress,
+                f"Completed {i}/{nbs} iterations ({elapsed_time:.2f} s)",
+            )
             cur_time = time.time()
 
-    _print_progress(display_progress,
-                    f"Bootstrap Completed = {(time.time()-start):.2f} s")
+    _print_progress(
+        display_progress, f"Bootstrap Completed = {(time.time()-start):.2f} s"
+    )
     df_out = []
     if concat:
         df_out = pd.concat(lst_bs)
@@ -165,9 +169,7 @@ def rolling_backtest_date_function(
         # Move the rolling window back by 5 years for the next iteration
         day_count += 1
         if day_count % skip_periods == 0:
-            print(
-                f"Completed {day_count:<6d} periods - {start_date:%Y-%m-%d}"
-            )
+            print(f"Completed {day_count:<6d} periods - {start_date:%Y-%m-%d}")
         start_date += sample_freq  # 1 DAY
 
     # Your rolling_subset DataFrame will now contain data for each rolling window
@@ -212,6 +214,7 @@ def rolling_backtest(
     sample_freq = frequency of the sample
     skip_periods = number of periods to skip before printing progress
     """
+
     def sample_fn(x, y):
         return _backtest_fn(df_history, x, y, back_fn)
 

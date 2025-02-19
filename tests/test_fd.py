@@ -408,16 +408,17 @@ def approx_stats_tests(dist):
     distribution
     """
 
-    mean, var, skew, kurt = dist.stats(moments='mvsk')
+    mean, var, skew, kurt = dist.stats(moments="mvsk")
     sd = np.sqrt(var)
-    mean_est = quad(lambda x : x*dist.pdf(x), -np.inf, np.inf)[0]
-    m2_est = quad(lambda x : x*x*dist.pdf(x), -np.inf, np.inf)[0]
+    mean_est = quad(lambda x: x * dist.pdf(x), -np.inf, np.inf)[0]
+    m2_est = quad(lambda x: x * x * dist.pdf(x), -np.inf, np.inf)[0]
     sd_est = np.sqrt(m2_est - mean_est * mean_est)
-    m3_est = quad(lambda x : dist.pdf(x) * x**3, -np.inf, np.inf)[0]
-    m4_est = quad(lambda x : dist.pdf(x) * x**4, -np.inf, np.inf)[0]
-    # Note that skew and kurt returned are currently m3 and m4, except skew doesn't even match that!!!!
-    skew_est = quad(lambda x : dist.pdf(x) * ((x - mean_est) / sd_est)**3, -np.inf, np.inf)[0]
-    kurt_est = quad(lambda x : dist.pdf(x) * ((x - mean_est) / sd_est)**4, -np.inf, np.inf)[0]
+    skew_est = quad(
+        lambda x: dist.pdf(x) * ((x - mean_est) / sd_est) ** 3, -np.inf, np.inf
+    )[0]
+    kurt_est = quad(
+        lambda x: dist.pdf(x) * ((x - mean_est) / sd_est) ** 4, -np.inf, np.inf
+    )[0]
     np.testing.assert_approx_equal(mean, mean_est, 1e-6)
     np.testing.assert_approx_equal(sd, sd_est, 1e-6)
     np.testing.assert_approx_equal(skew, skew_est, 1e-6)
@@ -496,8 +497,6 @@ def test_fit_johnson():
     s = fd.edf_stats(sp_ret, jsu_fit)
     print(s)
     np.testing.assert_approx_equal(s[0], 1.1395746330408656, 1e-6)
-   
-    
 
     x = np.linspace(-10, 10, 1000)
     cdf_vals = jsu_fit.cdf(x)
@@ -508,9 +507,8 @@ def test_fit_johnson():
     plt.plot(x_vals, p, color="r")
     plt.show()
 
-
-    df = pd.DataFrame({'p': p, 'x': x_vals})
-    df_csv = pd.DataFrame({'x': x, 'cdf': cdf_vals})
+    df = pd.DataFrame({"p": p, "x": x_vals})
+    df_csv = pd.DataFrame({"x": x, "cdf": cdf_vals})
     df_csv.to_csv("jsu_cdf.csv")
     df.to_csv("jsu_prob.csv")
 
@@ -529,15 +527,18 @@ def test_generalised_skewt():
     """
     Short tests of the Generalised Skew-T distribution
     """
-    gsd = fd.GeneralisedSkewT(0.0, 1.0, 6, 0.0, 1.0)# location and scale parameters at end = 0 and 1
-    
-    gsd_skew = fd.GeneralisedSkewT(0.5, 1.0, 6, 0.0, 1.0)#  location and scale parameters at end = 0 and 1
+    gsd = fd.GeneralisedSkewT(
+        0.0, 1.0, 6, 0.0, 1.0
+    )  # location and scale parameters at end = 0 and 1
+
+    gsd_skew = fd.GeneralisedSkewT(
+        0.5, 1.0, 6, 0.0, 1.0
+    )  #  location and scale parameters at end = 0 and 1
 
     approx_stats_tests(gsd_skew)
 
-
     approx_stats_tests(gsd)
-   
+
     lst_dist = {
         "GSD": [gsd.pdf, "r--"],
         "GSD_Skew": [gsd_skew.pdf, "b--"],
