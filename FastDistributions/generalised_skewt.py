@@ -24,13 +24,54 @@ def var_adjustment_sged(ƛ, pinv):
 
 
 def var_adjustment_sgt(ƛ, pinv, q):
-    a_adj = loggamma(3 * pinv) + loggamma(q - 2 * pinv) - loggamma(pinv) - loggamma(q)
-    a = (1 + 3 * (ƛ**2)) * np.exp(
-        a_adj
-    )  # * gamma(3*pinv) * gamma(q - 2*pinv) / gamma(pinv) / gamma(q)
-    b_adj = loggamma(2 * pinv) + loggamma(q - pinv) - loggamma(pinv) - loggamma(q)
-    b = 2 * ƛ * np.exp(b_adj)  # gamma(2*pinv)*gamma(q-pinv) / gamma(pinv) / gamma(q)
+
+    if (pinv < 5) & (q < 5):
+        a_adj = gamma(3 * pinv) * gamma(q - 2 * pinv) / gamma(pinv) / gamma(q)
+        b_adj = gamma(2 * pinv) * gamma(q - pinv) / gamma(pinv) / gamma(q)
+    else:
+        a_adj = (
+            loggamma(3 * pinv) + loggamma(q - 2 * pinv) - loggamma(pinv) - loggamma(q)
+        )
+        a_adj = np.exp(a_adj)
+        b_adj = loggamma(2 * pinv) + loggamma(q - pinv) - loggamma(pinv) - loggamma(q)
+        b_adj = np.exp(b_adj)
+
+    a = (
+        1 + 3 * (ƛ**2)
+    ) * a_adj  # * gamma(3*pinv) * gamma(q - 2*pinv) / gamma(pinv) / gamma(q)
+    b = 2 * ƛ * b_adj  # gamma(2*pinv)*gamma(q-pinv) / gamma(pinv) / gamma(q)
     return np.sqrt(np.maximum(a - b**2, 1e-20))
+
+
+def s_lambda(ƛ, pinv, q):
+    """
+    Calcualte S(lambda) from Theodassiou (eqn 4)
+    """
+
+    if (pinv < 5) & (q < 5):
+        a_adj = (
+            gamma(2 * pinv) ** 2
+            * gamma(q - pinv) ** 2
+            / gamma(pinv)
+            / gamma(q)
+            / gamma(3 * pinv)
+            / gamma(q - 2 * pinv)
+        )
+    else:
+        a_adj = (
+            2 * loggamma(2 * pinv)
+            + 2 * loggamma(q - pinv)
+            - loggamma(pinv)
+            - loggamma(q)
+            - loggamma(3 * pinv)
+            - loggamma(q - 2 * pinv)
+        )
+        a_adj = np.exp(a_adj)
+
+    s_lambda = (
+        1 + 3 * (ƛ**2) - 4 * (ƛ**2) * a_adj
+    )  
+    return np.sqrt(np.maximum(s_lambda, 1e-20))
 
 
 def generalised_skewt_loglikelihood(x, μ, σ, ƛ, k, n):
@@ -130,19 +171,108 @@ class GeneralisedSkewT(rv_continuous):
         return np.sqrt(self.var())
 
     def _mean(self):
+        # Matches equation 7 from 
+        # theodassiou
         p = self.k
         q = self.n / self.k
         p_inv = 1.0 / p
-        v = 2.0 / var_adjustment_sgt(self.ƛ, p_inv, q)
+        v = 2.0 / s_lambda(self.ƛ, p_inv, q)
+        if (p_inv < 5) & (q < 5):
+            mean_adj = (
+                loggamma(2 * p_inv)
+                + loggamma(q - p_inv)
+                -0.5 * loggamma(p_inv)
+                -0.5 * loggamma(q)
+                -0.5 * loggamma(3*p_inv)
+                -0.5 * loggamma(q-2*p_inv) 
+            )
+            mean_adj = np.exp(mean_adj)
+        else:
+            mean_adj = (
+            gamma(2 * p_inv)
+            * gamma(q - p_inv)
+            / np.sqrt(gamma(p_inv))
+            / np.sqrt(gamma(q))
+            / np.sqrt(gamma(3*p_inv))
+            / np.sqrt(gamma(q-2*p_inv))
+            )
+
         lam_adj = (
-            self.ƛ * v * gamma(2 * p_inv) * gamma(q - p_inv) / gamma(p_inv) / gamma(q)
+            self.ƛ
+            * v
+            * mean_adj
         )
         return self.μ + lam_adj * self.σ
 
+    def _skewkurt(self):
+        #        raise NotImplemented
+        # Currently trying to match equation 9 from
+        # theodassiou - typo in equation
+        p = self.k
+        q = self.n / self.k
+        p_inv = 1.0 / p
+        s_l = 1.0 / s_lambda(self.ƛ, p_inv, q)
+
+
+        mean_adj = (
+            gamma(2 * p_inv)
+            * gamma(q - p_inv)
+            / np.sqrt(gamma(p_inv))
+            / np.sqrt(gamma(q))
+            / np.sqrt(gamma(3*p_inv))
+            / np.sqrt(gamma(q-2*p_inv))
+            )
+
+        m1 = (
+            self.ƛ
+            * 2 * s_l
+            * mean_adj
+        )
+
+        m2 = (1 + 3*self.ƛ**2)*s_l**2
+
+        m3 = (
+            4
+            * self.ƛ
+            * (1 + self.ƛ**2) # typo in equ 9 - see eqn 5 for real value
+            * s_l**3
+            * gamma(4 * p_inv)
+            * gamma(q - 3 * p_inv)
+            * np.sqrt(gamma(p_inv))
+            * np.sqrt(gamma(q))
+            / np.sqrt(gamma(3 * p_inv) ** 3) 
+            / np.sqrt(gamma(q - 2 * p_inv) ** 3)
+        )
+
+        m_adj = (
+            gamma(5 * p_inv)
+            * gamma(q - 4 * p_inv)
+            * gamma(p_inv)
+            * gamma(q)
+            / gamma(3 * p_inv) ** 2
+            / gamma(q - 2 * p_inv) ** 2
+        )
+        m4 = (1 + 10 * self.ƛ**2 + 5 * self.ƛ**4) * s_l**4 * m_adj
+
+        mu = self._mean()
+        m3 = m3  #- 3 * (mu / self.σ) - (mu / self.σ) ** 3
+        skew = m3 - 3*m1*m2 + 2*m1**3
+        kurt = (
+                m4 
+                - 4*m1*m3
+                + 6*m1**2*m2
+                - 3*m1**4
+                )
+    
+        return skew, kurt
+
+
+
     def _stats(self):
-        # TODO: implement skewness and kurtosis calculations
-        # see Wikipedia
-        return _basestats(self)
+        mean = self._mean()
+        variance = self._var()
+        skew, kurt = self._skewkurt()
+        return mean, variance, skew, kurt
 
     def _ppf(self, q):
         """
@@ -297,8 +427,8 @@ def _gen_skewt_fit(returns_data, prob=None, display_progress=True):
     # - this function will return an empty gradient
     def ll_func(x):
         return -np.sum(
-                wt_prob
-                * generalised_skewt_loglikelihood(
+            wt_prob
+            * generalised_skewt_loglikelihood(
                 returns_data,
                 x[LOC_VAR],
                 x[SCALE_VAR],
