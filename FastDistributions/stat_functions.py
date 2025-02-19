@@ -19,6 +19,7 @@ def _array_slice_sample(a, sample_idx, axis=0):
     """
     return a[(slice(None),) * (axis % a.ndim) + (sample_idx,)]
 
+
 def _bootstrap_sample(ret_data, trial_name, fn):
     """
     wrapper function for supplied bootstrap
@@ -26,6 +27,7 @@ def _bootstrap_sample(ret_data, trial_name, fn):
     x = fn(ret_data)
     x["trial"] = trial_name
     return x
+
 
 def _print_progress(display_progress, msg_str):
     if display_progress:

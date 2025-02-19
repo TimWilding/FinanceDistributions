@@ -533,7 +533,7 @@ def test_generalised_skewt():
 
     gsd_skew = fd.GeneralisedSkewT(
         0.5, 1.0, 6, 0.0, 1.0
-    )  #  location and scale parameters at end = 0 and 1
+    )  # location and scale parameters at end = 0 and 1
 
     approx_stats_tests(gsd_skew)
 

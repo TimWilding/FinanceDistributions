@@ -4,7 +4,7 @@ Utility functions for downloading data from e.g. yfinance
 
 import os
 import os.path
-from multiprocessing.pool import ThreadPool
+#from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import pandas as pd
