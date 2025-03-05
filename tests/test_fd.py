@@ -213,7 +213,6 @@ def test_dists():
     gsd_skew = fd.GeneralisedSkewT(0, 1.0, 0.2, 2.0, 1000)
     print(gsd.pdf(-1.0))
     print(gsd_skew.pdf(-1.0))
-    # lst_indices = [("^GSPC", "SP 500"), ("^FTSE", "FTSE 100"), ("^N225", "Nikkei 225"), ('WFBIX', 'US Aggregate Bond Index')]
     df_ret = fd.get_test_data()
 
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
@@ -516,7 +515,6 @@ def test_fit_meixner():
     """
     Test the Miexner Distribution - fitting and statistics
     """
-
     def pdf_su_shape(x, beta, delta):
         return fd.Meixner(beta, delta, 0, 2.0).pdf(x)
 
@@ -533,7 +531,30 @@ def test_fit_meixner():
         y_log_scale=False,
         title="Meixner Distribution",
     )
-# https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
+    meix = fd.Meixner(-2.0, 1.0, 0, 2.0) # Excessive skew makes this a pathological case!
+    jsu_dist = fd.JohnsonSU.moment_match(*meix._stats())
+
+    pq = lambda x : meix.pdf(x)/jsu_dist.pdf(x)
+    fd.plot_function(pq, [-20, 20], y_lim = [0, 10], title='PDF ratio')
+    jsu_rv = jsu_dist.rvs(size=10000)
+
+    lst_dist = {
+        "beta = -2.0, delta = 1.0": [meix.pdf, "r--"],
+        "Johnson SU equiv": [jsu_dist.pdf, "b--"]
+    }
+    fd.plot_hist_fit(jsu_rv, "TEST DIST", lst_dist, nbins=50, log_scale=True)
+    fd.plot_multi_function(
+        lst_dist,
+        y_label="Probability Density",
+        x_lim=[-10.0, 10.0],
+        y_log_scale=False,
+        title="Meixner Distribution",
+    )
+
+    meix_rv = meix.rvs(size=10000)
+
+    fd.plot_hist_fit(meix_rv, "TEST DIST", lst_dist, nbins=50, log_scale=True)
+ # https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
     def cdf_su_shape(x, beta, delta):
         return fd.Meixner(beta, delta, 0, 2.0).cdf(x)
 

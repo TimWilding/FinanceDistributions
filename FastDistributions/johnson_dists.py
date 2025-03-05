@@ -10,6 +10,7 @@ import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import erf, erfinv
+from scipy.optimize import minimize, root
 from typing import Any
 
 
@@ -78,6 +79,7 @@ def log_pdf_johnson_su(x, gamma, delta, xi, lambd):
 
 
 class JohnsonSU(rv_continuous):
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.johnsonsu.html
     """
     Class to represent the JohnsonSU distribution using the same form as the
     scipy.stats.distribution objects. The distribution is characterised by:
@@ -151,9 +153,117 @@ class JohnsonSU(rv_continuous):
                 + 4 * m**2 * (m + 2) * np.cosh(2 * omega)
                 + 3 * (2 * m + 1)
             )
-            / (8 * self._var()**2)
+            / (8 * self._var() ** 2)
         )
         return kurt
+
+    @staticmethod
+    def _skewkurt(x):
+        m = x[0]
+        omega = x[1]
+        var = 0.5 * (m - 1) * (m * np.cosh(2 * omega) + 1)
+        skew = (
+            -np.sqrt(m)
+            * (m - 1) ** 2
+            * (m * (m + 2) * np.sinh(3 * omega) + 3 * np.sinh(omega))
+            / (4 * var**1.5)
+        )
+        kurt = (
+            (m - 1) ** 2
+            * (
+                m**2 * (m**4 + 2 * m**3 + 3 * m**2 - 3) * np.cosh(4 * omega)
+                + 4 * m**2 * (m + 2) * np.cosh(2 * omega)
+                + 3 * (2 * m + 1)
+            )
+            / (8 * var**2)
+        )
+        return skew, kurt
+
+    @staticmethod
+    def _jacskewkurt(x):
+        m = x[0]
+        omega = x[1]
+        ch_2om = np.cosh(2 * omega)
+        ch_4om = np.cosh(4 * omega)
+        sh_om = np.sinh(omega)
+        sh_3om = np.sinh(3 * omega)
+        v_m = (0.5 * m - 0.5) * (m *ch_2om + 1)
+        dsdm = (
+            -0.125
+            * (m - 1) ** 2
+            * (m * (m + 2) *sh_3om + 3 *sh_om)
+            / (m**0.5 * v_m ** 1.5)
+            - m**0.5
+            * (m - 1) ** 2
+            * (m *sh_3om + (m + 2) *sh_3om)
+            / (4 * v_m ** 1.5)
+            - m**0.5
+            * (2 * m - 2)
+            * (m * (m + 2) *sh_3om + 3 *sh_om)
+            / (4 * v_m ** 1.5)
+            - m**0.5
+            * (m - 1) ** 2
+            * (m * (m + 2) *sh_3om + 3 *sh_om)
+            * (-0.75 * m *ch_2om- 1.5 * (0.5 * m - 0.5) *ch_2om- 0.75)
+            / (
+                4
+                * v_m ** 1.5
+                * (0.5 * m - 0.5)
+                * (m *ch_2om+ 1)
+            )
+        )
+        dsdomega = -(m**0.5) * (m - 1) ** 2 * (
+            3 * m * (m + 2) * np.cosh(3 * omega) + 3 * np.cosh(omega)
+        ) / (4 * v_m ** 1.5) + 0.75 * m**1.5 * (
+            m - 1
+        ) ** 2 * (
+            m * (m + 2) *sh_3om + 3 *sh_om
+        ) * np.sinh(
+            2 * omega
+        ) / (
+            v_m ** 1.5 * (m *ch_2om+ 1)
+        )
+
+        dkdm = (
+            0.5
+            * (
+                m**2 * (4 * m**3 + 6 * m**2 + 6 * m) * ch_4om
+                + 4 * m**2 * ch_2om
+                + 8 * m * (m + 2) * ch_2om
+                + 2 * m * (m**4 + 2 * m**3 + 3 * m**2 - 3) * ch_4om
+                + 6
+            )
+            / (m * ch_2om + 1) ** 2
+            - 1.0
+            * (
+                4 * m**2 * (m + 2) * ch_2om
+                + m**2 * (m**4 + 2 * m**3 + 3 * m**2 - 3) * ch_4om
+                + 6 * m
+                + 3
+            )
+            * ch_2om
+            / (m * ch_2om + 1) ** 3
+        )
+        dkdomega = (
+            -2.0
+            * m
+            * (
+                4 * m**2 * (m + 2) * ch_2om
+                + m**2 * (m**4 + 2 * m**3 + 3 * m**2 - 3) * ch_4om
+                + 6 * m
+                + 3
+            )
+            * np.sinh(2 * omega)
+            / (m * ch_2om + 1) ** 3
+            + 0.5
+            * (
+                8 * m**2 * (m + 2) * np.sinh(2 * omega)
+                + 4 * m**2 * (m**4 + 2 * m**3 + 3 * m**2 - 3) * np.sinh(4 * omega)
+            )
+            / (m * ch_2om + 1) ** 2
+        )
+
+        return np.array([[dsdm, dsdomega], [dkdm, dkdomega]])
 
     def _cdf(self: Any, x: Any) -> Any:
         z = (x - self.xi) / self.lambd
@@ -167,13 +277,59 @@ class JohnsonSU(rv_continuous):
         m = (z - self.gamma) / self.delta
         return self.xi + self.lambd * np.sinh(m)
 
+    def _rvs(self, size=None, random_state=None):
+        """Generate random variates using the inverse CDF method."""
+        #      random_state = self._random_state  # Use the provided random state
+        u = random_state.uniform(0, 1, size)  # Generate uniform random numbers
+        return self._ppf(u)  # T
+
     def _stats(self):
         mean = self._mean()
         variance = self._var()
-    # Johnson SU skew and kurtosis are complex; you can use numerical methods
+        # Johnson SU skew and kurtosis are complex; you can use numerical methods
         skew = self._skew()
         kurt = self._kurtosis()
         return mean, variance, skew, kurt
+
+    @staticmethod
+    def moment_match(mean, var, skew, kurt):
+        """
+        See the algorithm by Hill, Hill & Holder
+        This is useful for rejection sampling
+        """
+        from scipy import optimize
+
+        # Set initial position using solution with
+        # zero skewness
+        m_0 = np.sqrt(np.sqrt(2.0 * kurt - 2.0) - 1.0)
+        omega_0 = 0  # no skewness
+        x_0 = np.array([m_0, omega_0])
+
+        def fit_targ(x):
+            """
+            Used with root function to match m, omega
+            to skewness and kurtosis
+            """
+            skew_x, kurt_x = JohnsonSU._skewkurt(x)
+            return [skew_x - skew, kurt_x - kurt]
+
+
+        sol = root(
+            fit_targ,
+            np.array([m_0, omega_0]),
+            jac=JohnsonSU._jacskewkurt,
+            method="lm",
+        )
+        # TODDO put in error handling
+        m = sol.x[0]
+        omega = sol.x[1]
+
+        delta = 1.0 / np.sqrt(np.log(m))
+        gamma = omega * delta
+        xlam = np.sqrt(2 * var / (m - 1) / (m * np.cosh(2 * omega) + 1))
+        xi = mean + xlam * np.sqrt(m) * np.sinh(omega)
+
+        return JohnsonSU(gamma, delta, xi, xlam)
 
     @staticmethod
     def fit(returns_data, prob=None, display_progress=True):
