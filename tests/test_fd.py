@@ -511,10 +511,12 @@ def test_fit_johnson():
     df_csv.to_csv("jsu_cdf.csv")
     df.to_csv("jsu_prob.csv")
 
+
 def test_fit_meixner():
     """
     Test the Miexner Distribution - fitting and statistics
     """
+
     def pdf_su_shape(x, beta, delta):
         return fd.Meixner(beta, delta, 0, 2.0).pdf(x)
 
@@ -531,16 +533,18 @@ def test_fit_meixner():
         y_log_scale=False,
         title="Meixner Distribution",
     )
-    meix = fd.Meixner(-2.0, 1.0, 0, 2.0) # Excessive skew makes this a pathological case!
+    meix = fd.Meixner(
+        -2.0, 1.0, 0, 2.0
+    )  # Excessive skew makes this a pathological case!
     jsu_dist = fd.JohnsonSU.moment_match(*meix._stats())
 
-    pq = lambda x : meix.pdf(x)/jsu_dist.pdf(x)
-    fd.plot_function(pq, [-20, 20], y_lim = [0, 10], title='PDF ratio')
+    pq = lambda x: meix.pdf(x) / jsu_dist.pdf(x)
+    fd.plot_function(pq, [-20, 20], y_lim=[0, 10], title="PDF ratio")
     jsu_rv = jsu_dist.rvs(size=10000)
 
     lst_dist = {
         "beta = -2.0, delta = 1.0": [meix.pdf, "r--"],
-        "Johnson SU equiv": [jsu_dist.pdf, "b--"]
+        "Johnson SU equiv": [jsu_dist.pdf, "b--"],
     }
     fd.plot_hist_fit(jsu_rv, "TEST DIST", lst_dist, nbins=50, log_scale=True)
     fd.plot_multi_function(
@@ -551,10 +555,11 @@ def test_fit_meixner():
         title="Meixner Distribution",
     )
 
-    meix_rv = meix.rvs(size=10000)
+    meix_rv = meix.rvs(size=100)
 
     fd.plot_hist_fit(meix_rv, "TEST DIST", lst_dist, nbins=50, log_scale=True)
- # https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
+
+    # https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
     def cdf_su_shape(x, beta, delta):
         return fd.Meixner(beta, delta, 0, 2.0).cdf(x)
 
@@ -573,17 +578,17 @@ def test_fit_meixner():
         title="Meixner Distribution",
     )
 
-#    jsu = fd.JohnsonSU(0.5, 0.05, 0, 1.0)
-#    test_val = 3
-#    cdf = jsu.cdf(test_val)
-#    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
-#    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
+    #    jsu = fd.JohnsonSU(0.5, 0.05, 0, 1.0)
+    #    test_val = 3
+    #    cdf = jsu.cdf(test_val)
+    #    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
+    #    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
 
-#   jsu = fd.JohnsonSU(-1.1, 0.8, 0, 1.0)
-#   test_val = 0.5
-#    cdf = jsu.cdf(test_val)
-#    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
-#    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
+    #   jsu = fd.JohnsonSU(-1.1, 0.8, 0, 1.0)
+    #   test_val = 0.5
+    #    cdf = jsu.cdf(test_val)
+    #    cdf_approx = quad(jsu.pdf, -np.inf, test_val)[0]
+    #    np.testing.assert_approx_equal(cdf, cdf_approx, 1e-6)
 
     df_ret = fd.get_test_data()
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values

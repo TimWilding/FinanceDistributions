@@ -10,7 +10,7 @@ import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import erf, erfinv
-from scipy.optimize import minimize, root
+from scipy.optimize import root
 from typing import Any
 
 
@@ -187,41 +187,28 @@ class JohnsonSU(rv_continuous):
         ch_4om = np.cosh(4 * omega)
         sh_om = np.sinh(omega)
         sh_3om = np.sinh(3 * omega)
-        v_m = (0.5 * m - 0.5) * (m *ch_2om + 1)
+        v_m = (0.5 * m - 0.5) * (m * ch_2om + 1)
         dsdm = (
             -0.125
             * (m - 1) ** 2
-            * (m * (m + 2) *sh_3om + 3 *sh_om)
-            / (m**0.5 * v_m ** 1.5)
+            * (m * (m + 2) * sh_3om + 3 * sh_om)
+            / (m**0.5 * v_m**1.5)
+            - m**0.5 * (m - 1) ** 2 * (m * sh_3om + (m + 2) * sh_3om) / (4 * v_m**1.5)
+            - m**0.5 * (2 * m - 2) * (m * (m + 2) * sh_3om + 3 * sh_om) / (4 * v_m**1.5)
             - m**0.5
             * (m - 1) ** 2
-            * (m *sh_3om + (m + 2) *sh_3om)
-            / (4 * v_m ** 1.5)
-            - m**0.5
-            * (2 * m - 2)
-            * (m * (m + 2) *sh_3om + 3 *sh_om)
-            / (4 * v_m ** 1.5)
-            - m**0.5
-            * (m - 1) ** 2
-            * (m * (m + 2) *sh_3om + 3 *sh_om)
-            * (-0.75 * m *ch_2om- 1.5 * (0.5 * m - 0.5) *ch_2om- 0.75)
-            / (
-                4
-                * v_m ** 1.5
-                * (0.5 * m - 0.5)
-                * (m *ch_2om+ 1)
-            )
+            * (m * (m + 2) * sh_3om + 3 * sh_om)
+            * (-0.75 * m * ch_2om - 1.5 * (0.5 * m - 0.5) * ch_2om - 0.75)
+            / (4 * v_m**1.5 * (0.5 * m - 0.5) * (m * ch_2om + 1))
         )
         dsdomega = -(m**0.5) * (m - 1) ** 2 * (
             3 * m * (m + 2) * np.cosh(3 * omega) + 3 * np.cosh(omega)
-        ) / (4 * v_m ** 1.5) + 0.75 * m**1.5 * (
-            m - 1
-        ) ** 2 * (
-            m * (m + 2) *sh_3om + 3 *sh_om
+        ) / (4 * v_m**1.5) + 0.75 * m**1.5 * (m - 1) ** 2 * (
+            m * (m + 2) * sh_3om + 3 * sh_om
         ) * np.sinh(
             2 * omega
         ) / (
-            v_m ** 1.5 * (m *ch_2om+ 1)
+            v_m**1.5 * (m * ch_2om + 1)
         )
 
         dkdm = (
@@ -297,7 +284,6 @@ class JohnsonSU(rv_continuous):
         See the algorithm by Hill, Hill & Holder
         This is useful for rejection sampling
         """
-        from scipy import optimize
 
         # Set initial position using solution with
         # zero skewness
@@ -313,10 +299,9 @@ class JohnsonSU(rv_continuous):
             skew_x, kurt_x = JohnsonSU._skewkurt(x)
             return [skew_x - skew, kurt_x - kurt]
 
-
         sol = root(
             fit_targ,
-            np.array([m_0, omega_0]),
+            np.array(x_0),
             jac=JohnsonSU._jacskewkurt,
             method="lm",
         )

@@ -248,7 +248,7 @@ def braga_natale_measure(t, Sigma, P, q, Omega, tau=1.0, delta=1.0, exp_returns=
         t, Sigma, P, q, Omega, tau, delta, exp_returns
     )
     w_bl = unconstrained_optimal_portfolio(Sigma_hat, pi_hat, delta)
-    lam, dlamdq = he_litterman_lambda(t, Sigma, P, q, Omega, tau, delta, exp_returns)
+    _, dlamdq = he_litterman_lambda(t, Sigma, P, q, Omega, tau, delta, exp_returns)
 
     te = np.sqrt((w_bl - t) @ Sigma @ (w_bl - t))
     dtedw = Sigma @ (w_bl - t) / te
