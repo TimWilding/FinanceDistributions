@@ -484,6 +484,12 @@ def test_fit_johnson():
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
     jsu_fit = fd.JohnsonSU.fitclass(sp_ret)
 
+    jsu_rvs = jsu_fit.rvs(100000)
+    u = np.random.uniform(0, 1.0, 10000)
+    x = jsu_fit.ppf(u)
+
+    fd.plot_hist_fit(jsu_rvs, "TEST DIST", {"Johnson SU": [jsu_fit.pdf, "r--"]}, 300)
+
     approx_stats_tests(jsu_fit)
 
     norm_mod = norm.fit(sp_ret)
@@ -540,22 +546,10 @@ def test_fit_meixner():
 
     pq = lambda x: meix.pdf(x) / jsu_dist.pdf(x)
     fd.plot_function(pq, [-20, 20], y_lim=[0, 10], title="PDF ratio")
-    jsu_rv = jsu_dist.rvs(size=10000)
 
-    lst_dist = {
-        "beta = -2.0, delta = 1.0": [meix.pdf, "r--"],
-        "Johnson SU equiv": [jsu_dist.pdf, "b--"],
-    }
-    fd.plot_hist_fit(jsu_rv, "TEST DIST", lst_dist, nbins=50, log_scale=True)
-    fd.plot_multi_function(
-        lst_dist,
-        y_label="Probability Density",
-        x_lim=[-10.0, 10.0],
-        y_log_scale=False,
-        title="Meixner Distribution",
-    )
 
-    meix_rv = meix.rvs(size=100)
+
+    meix_rv = meix.rvs(size=10000)
 
     fd.plot_hist_fit(meix_rv, "TEST DIST", lst_dist, nbins=50, log_scale=True)
 

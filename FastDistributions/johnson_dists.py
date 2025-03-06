@@ -259,16 +259,15 @@ class JohnsonSU(rv_continuous):
         cdf = 0.5 * (1 + erf(transformed / np.sqrt(2)))
         return cdf
 
-    def _ppf(self, q, *args, **kwargs):
+    def _ppf(self, q):
         z = np.sqrt(2) * erfinv(2 * q - 1)
         m = (z - self.gamma) / self.delta
         return self.xi + self.lambd * np.sinh(m)
-
+    
     def _rvs(self, size=None, random_state=None):
-        """Generate random variates using the inverse CDF method."""
-        #      random_state = self._random_state  # Use the provided random state
-        u = random_state.uniform(0, 1, size)  # Generate uniform random numbers
-        return self._ppf(u)  # T
+        u = random_state.uniform(size=size)
+        return self._ppf(u)
+    
 
     def _stats(self):
         mean = self._mean()

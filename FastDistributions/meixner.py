@@ -12,6 +12,8 @@ import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import gamma, gammaln, psi
+from scipy.optimize import minimize
+from johnson_dists import JohnsonSU
 
 LOC_VAR = 3
 SCALE_VAR = 0
@@ -196,6 +198,8 @@ class Meixner(rv_continuous):
         self.beta = beta
         self.delta = delta
         self.mu = loc
+        self._jsu_dist = None
+        self._max_ratio = 1.0
 
     def _pdf(self, x):
         pd = np.exp(self._logpdf(x))
@@ -242,6 +246,59 @@ class Meixner(rv_continuous):
         skew = self._skew()
         kurt = self._kurt()
         return mean, variance, skew, kurt
+
+    def _rvs(self, size=None, random_state=None):
+        """
+        Generate random samples from Meixner using rejection sampling.
+        See grigoletto et al. 2008 for details. YThis works up to a 
+        point, but some more extreme distributions will not generate
+        samples.
+
+        This method does not appear to work well with extreme skewness
+        and kurtosis. The tails dominate the pdf ratio.
+
+        Maybe we should replace the moment matching approach with an
+        algorithm to minimise the maximum pdf ratio. That sounds like
+        an expensive calculation though
+        """
+
+        def pdf_ratio_fn(x):
+            return -self._pdf(x) / self._jsu_dist.pdf(x)
+
+        if self._jsu_dist is None:
+            self._jsu_dist = JohnsonSU.moment_match(*self._stats())
+            res = minimize(pdf_ratio_fn, 0.0, method="Nelder-Mead")
+            if not res.success:
+                raise ValueError("Failed to find a maximum pdf ratio")
+            self._max_ratio = -res.fun
+
+        M = 1.05 * self._max_ratio  # Safety margin factor (should be >= max(p(x)/q(x)))
+        # find max p/q
+        samples = []
+        tot_size = np.prod(size)
+        count = 0
+        max_pq = 1.0
+        while len(samples) < tot_size:
+            # Sample from proposal distribution
+            # must use size=1 to get a scalar
+            x = self._jsu_dist.rvs(size=1, random_state=random_state)
+
+            pdf_ratio = -pdf_ratio_fn(x)
+            # Compute acceptance probability
+            accept_prob = pdf_ratio / M
+            if accept_prob > 1:
+                count = count + 1
+
+            if pdf_ratio > max_pq:
+                max_pq = pdf_ratio
+
+            u = random_state.rand()
+            if u < accept_prob:
+                samples.append(x)
+
+        if count > 0:
+            print("Value of M set too low")
+        return np.array(samples)
 
     #    def grad_pdf(self, x):
     #        return meixner_log_pdf_gradient(x, self.alpha, self.beta, self.delta, self.mu)#
