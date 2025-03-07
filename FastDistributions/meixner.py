@@ -13,7 +13,7 @@ import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import gamma, gammaln, psi
 from scipy.optimize import minimize
-from johnson_dists import JohnsonSU
+from .johnson_dists import JohnsonSU
 
 LOC_VAR = 3
 SCALE_VAR = 0
