@@ -271,6 +271,7 @@ class Meixner(rv_continuous):
             res = shgo(pdf_ratio_fn, [(-10, 10)], n=64, sampling_method='sobol')   
             if not res.success:
                 raise ValueError("Failed to find a maximum pdf ratio")
+                self._jsu_dist = None
             self._max_ratio = -res.fun
             
         return reject_block_sample(self, self._jsu_dist, size=size, random_state=random_state, max_ratio=self._max_ratio)

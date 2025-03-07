@@ -303,7 +303,7 @@ def edf_stats(x, dist: rv_continuous):
     return a_squared, w_squared, k_s_stat, u_squared, kuiper_v
 
 
-def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=2.7):
+def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=2.7, max_samples=100):
     """
     Use the rejection sampling method to generate samples from a
     distribution that is difficult to sample from directly.
@@ -318,19 +318,22 @@ def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=
     def pdf_ratio_fn(x):
         return -dist._pdf(x) / gen_dist.pdf(x)
 
-    M = 1.05 * max_ratio  # Safety margin factor (should be >= max(p(x)/q(x)))
+    M = 1.1 * max_ratio  # Safety margin factor (should be >= max(p(x)/q(x)))
     # find max p/q
     samples = np.array([])
     tot_size = np.prod(size)
     count = 0
     max_pq = 1.0
     generated_samples = 0
-    while generated_samples < tot_size:
+    tot_samples = 0
+    while (generated_samples < tot_size) & (tot_samples < max_samples*tot_size):
 
         # Sample from proposal distribution
         # must use size=1 to get a scalarS
 
         num_to_generate = tot_size - generated_samples
+        tot_samples = tot_samples + num_to_generate
+
         x = gen_dist.rvs(size=num_to_generate, random_state=random_state)
         u = random_state.rand(num_to_generate)
 
@@ -339,15 +342,16 @@ def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=
         accept_prob = pdf_ratio / M
 
         if np.any(accept_prob > 1):
-            print(f"X = {x}, pdf_ratio = {pdf_ratio}")
-            count = count + 1
+            print(f"x = {x[accept_prob>1]}, pdf_ratio = {pdf_ratio[accept_prob>1]}")
+            count = count + len(x[accept_prob > 1])
 
         if np.any(pdf_ratio > max_pq):
             max_pq = np.max(pdf_ratio)
 
         samples = np.concatenate((samples, x[u < accept_prob]))
         generated_samples = len(samples)
-
+    if tot_samples > max_samples*tot_size:
+        print(f"Exceeded maximum number of samples = {max_samples}")
     if count > 0:
         print("Value of M set too low in rejection block sampling routine")
     return samples
