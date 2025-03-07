@@ -12,8 +12,9 @@ import numpy as np
 import pybobyqa
 from scipy.stats import rv_continuous, FitError
 from scipy.special import gamma, gammaln, psi
-from scipy.optimize import minimize
+from scipy.optimize import shgo
 from .johnson_dists import JohnsonSU
+from .stat_functions import reject_block_sample
 
 LOC_VAR = 3
 SCALE_VAR = 0
@@ -267,38 +268,12 @@ class Meixner(rv_continuous):
 
         if self._jsu_dist is None:
             self._jsu_dist = JohnsonSU.moment_match(*self._stats())
-            res = minimize(pdf_ratio_fn, 0.0, method="Nelder-Mead")
+            res = shgo(pdf_ratio_fn, [(-10, 10)], n=64, sampling_method='sobol')   
             if not res.success:
                 raise ValueError("Failed to find a maximum pdf ratio")
             self._max_ratio = -res.fun
-
-        M = 1.05 * self._max_ratio  # Safety margin factor (should be >= max(p(x)/q(x)))
-        # find max p/q
-        samples = []
-        tot_size = np.prod(size)
-        count = 0
-        max_pq = 1.0
-        while len(samples) < tot_size:
-            # Sample from proposal distribution
-            # must use size=1 to get a scalar
-            x = self._jsu_dist.rvs(size=1, random_state=random_state)
-
-            pdf_ratio = -pdf_ratio_fn(x)
-            # Compute acceptance probability
-            accept_prob = pdf_ratio / M
-            if accept_prob > 1:
-                count = count + 1
-
-            if pdf_ratio > max_pq:
-                max_pq = pdf_ratio
-
-            u = random_state.rand()
-            if u < accept_prob:
-                samples.append(x)
-
-        if count > 0:
-            print("Value of M set too low")
-        return np.array(samples)
+            
+        return reject_block_sample(self, self._jsu_dist, size=size, random_state=random_state, max_ratio=self._max_ratio)
 
     #    def grad_pdf(self, x):
     #        return meixner_log_pdf_gradient(x, self.alpha, self.beta, self.delta, self.mu)#
