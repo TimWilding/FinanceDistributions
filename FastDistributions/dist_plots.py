@@ -210,6 +210,7 @@ def plot_multi_function(
     x_label="x",
     y_label="y",
     y_log_scale=False,
+    ax=None,
 ):
     """
     Takes a function and produces a graph using the limits
@@ -219,6 +220,11 @@ def plot_multi_function(
     y_lim = min and max of function values (should I set a default)
     n = number of points to use to evaluate function
     """
+    show = False
+    if ax is None:
+        plt.figure()
+        ax = plt.gca()
+        show = True
     t_min = x_lim[0]
     t_max = x_lim[1]
     # Used t_vals & y_vals to separate ourselves from the y & t symbols used to build the solution to the ODE
@@ -235,7 +241,7 @@ def plot_multi_function(
             y_max = np.max(y_vals)
         if np.min(y_vals) < y_min:
             y_min = np.min(y_vals)
-        plt.plot(t_vals, y_vals, dict_fn[fn_name][1], label=fn_name)
+        ax.plot(t_vals, y_vals, dict_fn[fn_name][1], label=fn_name)
 
     if y_lim is None:
         y_max = 1.1 * y_max - 0.1 * y_min
@@ -244,16 +250,17 @@ def plot_multi_function(
         y_min = y_lim[0]
         y_max = y_lim[1]
     if y_log_scale:
-        plt.yscale("log")
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title(title)
+        ax.set_yscale("log")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
 
-    plt.ylim([y_min, y_max])
+    ax.set_ylim([y_min, y_max])
     # plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0)) # plot tick marks every 0.1 along the axis
-    plt.xlim([t_min, t_max])
-    plt.legend()
-    plt.show()
+    ax.set_xlim([t_min, t_max])
+    ax.legend()
+    if show:
+        plt.show()
 
 
 def plot_function(
@@ -303,13 +310,13 @@ def _show_qq_labels(ax, nbins, data_pctiles, fn_pctiles, pctiles, xlim):
         if xlim is None:
             # Adjust fontsize and position as needed
             ax.text(
-                    data_pctiles[i],
-                    fn_pctiles[i],
-                    f"{pctiles[i]:0.2f}",
-                    fontsize=6,
-                    ha="right",
-                    va="bottom",
-                )
+                data_pctiles[i],
+                fn_pctiles[i],
+                f"{pctiles[i]:0.2f}",
+                fontsize=6,
+                ha="right",
+                va="bottom",
+            )
         else:
             if (
                 (data_pctiles[i] < xlim[1])
