@@ -544,9 +544,10 @@ def test_fit_meixner():
     )  # Excessive skew makes this a pathological case!
     jsu_dist = fd.JohnsonSU.moment_match(*meix._stats())
 
-    pq = lambda x: meix.pdf(x) / jsu_dist.pdf(x)
+    def pq(x):
+        return meix.pdf(x) / jsu_dist.pdf(x)
+    
     fd.plot_function(pq, [-20, 20], y_lim=[0, 10], title="PDF ratio")
-
 
 
     meix_rv = meix.rvs(size=10000)

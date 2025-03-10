@@ -167,7 +167,6 @@ class GeneralisedSkewT(rv_continuous):
     def _pdf(self, x):
         return np.exp(self._logpdf(x))
 
-
     def _var(self):
         if self.n <= 2:
             return np.Inf

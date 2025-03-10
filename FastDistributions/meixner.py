@@ -251,7 +251,7 @@ class Meixner(rv_continuous):
     def _rvs(self, size=None, random_state=None):
         """
         Generate random samples from Meixner using rejection sampling.
-        See grigoletto et al. 2008 for details. YThis works up to a 
+        See grigoletto et al. 2008 for details. This works up to a
         point, but some more extreme distributions will not generate
         samples.
 
@@ -268,12 +268,12 @@ class Meixner(rv_continuous):
 
         if self._jsu_dist is None:
             self._jsu_dist = JohnsonSU.moment_match(*self._stats())
-            res = shgo(pdf_ratio_fn, [(-10, 10)], n=64, sampling_method='sobol')   
+            res = shgo(pdf_ratio_fn, [(-10, 10)], n=64, sampling_method='sobol') 
             if not res.success:
                 raise ValueError("Failed to find a maximum pdf ratio")
                 self._jsu_dist = None
             self._max_ratio = -res.fun
-            
+
         return reject_block_sample(self, self._jsu_dist, size=size, random_state=random_state, max_ratio=self._max_ratio)
 
     #    def grad_pdf(self, x):
