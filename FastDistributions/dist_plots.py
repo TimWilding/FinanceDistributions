@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import scipy.stats
-from scipy.stats import chi2, rankdata
+from scipy.stats import chi2, rankdata, kstest, ecdf
 
 
 def plot_hist_fit(
@@ -578,3 +578,50 @@ def plot_log_cdf(
         title=f"{series_name} - Negative CDF",
     )
     plt.show()
+
+def plot_ks(index_ret, dist, dist_name, index_name, ax=None):
+    """
+    Plot the Kolmogorov-Smirnov test for a distribution. The
+    Kolmogorov-Smirnov test is a non-parametric test that compares
+    the empirical distribution function of the sample data with the
+    cumulative distribution function of the distribution.
+
+    Inputs
+    =========    
+     - index_ret - sample data
+     - dist - distribution object
+     - dist_name - name of the distribution
+     - index_name - name of the index
+    """
+    ks_res = kstest(index_ret, dist.cdf)
+    show = False
+    if ax is None:
+        ax = plt.gca()
+        show = True
+    x_range = np.quantile(index_ret, [0.001, 0.999])
+    x_min = np.maximum(x_range[1], dist.ppf(0.999))# index_ret.min()
+    x_max = np.minimum(x_range[0], dist.ppf(0.001))#index_ret.max()
+
+    x_vals = np.linspace(x_min, x_max, 200)
+    cdf = dist.cdf(x_vals)
+    e_cdf = ecdf(index_ret).cdf.evaluate(x_vals)
+    ax.plot(x_vals, e_cdf, 'r-', label="Sample")
+    ax.plot(x_vals, cdf, 'b-', label=dist_name)
+    ax.set_ylim([0.0, 1.0])
+    ax.set_xlabel('Log Return')
+    ax.set_ylabel('Cumulative Probability')
+    ax.legend(loc='upper left')
+    ax.axvline(ks_res.statistic_location, 0.0, 1.0, color='black', linestyle='--')
+    ax.set_title(f'{index_name} - {dist_name}')
+    textstr = '\n'.join((
+        f'KS Stat={ks_res.statistic:.2f}',
+        f'Location={ks_res.statistic_location:.2f}',
+        f'P-Value={ks_res.pvalue:.2f}'))
+
+    # Add text box to the plot
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5, edgecolor='black')
+    ax.text(0.95, 0.05, textstr, transform=ax.transAxes, fontsize=6,
+            verticalalignment='bottom', horizontalalignment='right', bbox=props)
+    if show:
+        plt.show()
+    return ax

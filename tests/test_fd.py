@@ -527,7 +527,7 @@ def test_fit_meixner():
         return fd.Meixner(beta, delta, 0, 2.0).pdf(x)
 
     lst_dist = {
-        "beta = -2.0, delta = 1.0": [lambda x: pdf_su_shape(x, -2.0, 1.0), "r--"],
+        "beta = -1.3, delta = 1.0": [lambda x: pdf_su_shape(x, -1.3, 1.0), "r--"],
         "beta = 0.0, delta = 1.0": [lambda x: pdf_su_shape(x, 0.0, 1.0), "b--"],
         "beta = 1.5, delta = 1.0": [lambda x: pdf_su_shape(x, 1.5, 1.0), "g--"],
         "Normal": [norm.pdf, "k-"],
@@ -540,7 +540,7 @@ def test_fit_meixner():
         title="Meixner Distribution",
     )
     meix = fd.Meixner(
-        -2.0, 1.0, 0, 2.0
+        -1.3, 1.0, 0, 2.0
     )  # Excessive skew makes this a pathological case!
     jsu_dist = fd.JohnsonSU.moment_match(*meix._stats())
 
@@ -552,7 +552,8 @@ def test_fit_meixner():
 
     meix_rv = meix.rvs(size=10000)
 
-    fd.plot_hist_fit(meix_rv, "TEST DIST", lst_dist, nbins=50, log_scale=True)
+    fd.plot_hist_fit(meix_rv, "TEST DIST", lst_dist, ylim=[1e-5,
+                    0.8], nbins=50, log_scale=True)
 
     # https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
     def cdf_su_shape(x, beta, delta):
@@ -654,6 +655,8 @@ def test_generalised_skewt():
     sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
 
     gsd_fit = fd.GeneralisedSkewT.fitclass(sp_ret)
+    rvs = gsd_fit.rvs(size=100)
+    fd.plot_ks(rvs, gsd_fit, "GST", "SP 500")
     approx_stats_tests(gsd_fit)
 
     cdf_testing(gsd_fit, 0.9)

@@ -51,8 +51,9 @@ def meixner_loglikelihood(
         - np.log(2 * alpha)
         - gammaln(2 * delta)
     )
-    log_exp_factor = beta * (x - mu) / alpha
-    arg = delta + 1j * (x - mu) / alpha
+    z = (x - mu) / alpha
+    log_exp_factor = beta * z
+    arg = delta + 1j * z
     # the mpmath gamma function can
     # calculate gamma to a higher precision
     # it may be worth switching here.
@@ -268,13 +269,16 @@ class Meixner(rv_continuous):
 
         if self._jsu_dist is None:
             self._jsu_dist = JohnsonSU.moment_match(*self._stats())
-            res = shgo(pdf_ratio_fn, [(-10, 10)], n=64, sampling_method='sobol') 
-            if not res.success:
-                raise ValueError("Failed to find a maximum pdf ratio")
+            res = shgo(pdf_ratio_fn, [(-10, 10)])#, n=64, sampling_method='sobol')
+            if (not res.success) or res.fun < -1000:
                 self._jsu_dist = None
             self._max_ratio = -res.fun
-
-        return reject_block_sample(self, self._jsu_dist, size=size, random_state=random_state, max_ratio=self._max_ratio)
+        # Fall black to extremely slow method if we can't find a good jsu dist
+        if self._jsu_dist is None:        
+            u = random_state.uniform(size=size)
+            return self._ppf(u)
+        else:
+            return reject_block_sample(self, self._jsu_dist, size=size, random_state=random_state, max_ratio=self._max_ratio)
 
     #    def grad_pdf(self, x):
     #        return meixner_log_pdf_gradient(x, self.alpha, self.beta, self.delta, self.mu)#
