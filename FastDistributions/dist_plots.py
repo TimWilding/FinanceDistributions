@@ -579,7 +579,8 @@ def plot_log_cdf(
     )
     plt.show()
 
-def plot_ks(index_ret, dist, dist_name, index_name, ax=None):
+
+def plot_ks(index_ret, dist, dist_name, index_name, xlabel='LogReturn', ax=None):
     """
     Plot the Kolmogorov-Smirnov test for a distribution. The
     Kolmogorov-Smirnov test is a non-parametric test that compares
@@ -587,7 +588,7 @@ def plot_ks(index_ret, dist, dist_name, index_name, ax=None):
     cumulative distribution function of the distribution.
 
     Inputs
-    =========    
+    =========
      - index_ret - sample data
      - dist - distribution object
      - dist_name - name of the distribution
@@ -599,8 +600,8 @@ def plot_ks(index_ret, dist, dist_name, index_name, ax=None):
         ax = plt.gca()
         show = True
     x_range = np.quantile(index_ret, [0.001, 0.999])
-    x_min = np.maximum(x_range[1], dist.ppf(0.999))# index_ret.min()
-    x_max = np.minimum(x_range[0], dist.ppf(0.001))#index_ret.max()
+    x_min = np.maximum(x_range[1], dist.ppf(0.999))  # index_ret.min()
+    x_max = np.minimum(x_range[0], dist.ppf(0.001))  # index_ret.max()
 
     x_vals = np.linspace(x_min, x_max, 200)
     cdf = dist.cdf(x_vals)
@@ -608,7 +609,7 @@ def plot_ks(index_ret, dist, dist_name, index_name, ax=None):
     ax.plot(x_vals, e_cdf, 'r-', label="Sample")
     ax.plot(x_vals, cdf, 'b-', label=dist_name)
     ax.set_ylim([0.0, 1.0])
-    ax.set_xlabel('Log Return')
+    ax.set_xlabel(xlabel)
     ax.set_ylabel('Cumulative Probability')
     ax.legend(loc='upper left')
     ax.axvline(ks_res.statistic_location, 0.0, 1.0, color='black', linestyle='--')

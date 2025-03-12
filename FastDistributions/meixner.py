@@ -269,12 +269,12 @@ class Meixner(rv_continuous):
 
         if self._jsu_dist is None:
             self._jsu_dist = JohnsonSU.moment_match(*self._stats())
-            res = shgo(pdf_ratio_fn, [(-10, 10)])#, n=64, sampling_method='sobol')
+            res = shgo(pdf_ratio_fn, [(-10, 10)])  # , n=64, sampling_method='sobol')
             if (not res.success) or res.fun < -1000:
                 self._jsu_dist = None
             self._max_ratio = -res.fun
         # Fall black to extremely slow method if we can't find a good jsu dist
-        if self._jsu_dist is None:        
+        if self._jsu_dist is None:
             u = random_state.uniform(size=size)
             return self._ppf(u)
         else:

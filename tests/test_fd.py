@@ -546,14 +546,13 @@ def test_fit_meixner():
 
     def pq(x):
         return meix.pdf(x) / jsu_dist.pdf(x)
-    
-    fd.plot_function(pq, [-20, 20], y_lim=[0, 10], title="PDF ratio")
 
+    fd.plot_function(pq, [-20, 20], y_lim=[0, 10], title="PDF ratio")
 
     meix_rv = meix.rvs(size=10000)
 
     fd.plot_hist_fit(meix_rv, "TEST DIST", lst_dist, ylim=[1e-5,
-                    0.8], nbins=50, log_scale=True)
+                     0.8], nbins=50, log_scale=True)
 
     # https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
     def cdf_su_shape(x, beta, delta):

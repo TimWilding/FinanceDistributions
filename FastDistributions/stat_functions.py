@@ -342,7 +342,7 @@ def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=
         accept_prob = pdf_ratio / M
 
         if np.any(accept_prob > 1):
-            print(f"x = {x[accept_prob>1]}, pdf_ratio = {pdf_ratio[accept_prob>1]}")
+            print(f"x = {x[accept_prob > 1]}, pdf_ratio = {pdf_ratio[accept_prob > 1]}, M={M}")
             count = count + len(x[accept_prob > 1])
 
         if np.any(pdf_ratio > max_pq):
