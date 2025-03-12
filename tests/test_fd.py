@@ -260,7 +260,7 @@ def test_cached_read():
     before reading in a cSV file
     """
     df_prices = fd.read_cached_excel(
-        "https://www.eurekahedge.com/Indices/ExportIndexReturnsToExcel?IndexType=Eurekahedge&IndexId=640",
+        "https://raw.githubusercontent.com/TimWilding/FinanceDistributions/refs/heads/master/data/HF_Index.xlsx",
         header=3,
     )
     df_prices["LogReturn"] = np.log((100 + df_prices["PercentReturn"]) / 100)
