@@ -11,6 +11,9 @@
     <li>
       <a href="#Finance-Distributions">About The Project</a>
       <ul>
+        <li><a href="#distributions">Distributions</a></li>
+        <li><a href="#robust-correlations">Robust Correlations</a></li>
+        <li><a href="#allocation-routines">Allocation Routines</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
@@ -34,7 +37,10 @@ Finance Distributions is a set of useful calculations and plots for statistical 
 distributions that include skewness and kurtosis parameters. There are some routines for calculating robust correlations, and some simple allocation 
 recipes for using those routines.
 
-The code can be installed by running python setup.py install. The following distributions are added:
+See instructions for getting started below. 
+
+### Distributions
+The following distributions are added:
 * *LevyStableInterp* - an interpolated version of the Levy Stable distribution for fast fitting
 * *GeneralisedSkewT* - an analytical distribution with skewness and fat tails that can be used for models
 * *EntropyDistributions* - a generalisation of the Normal Distribution to include skewness and kurtosis based on the principles of maximum entropy
@@ -45,16 +51,23 @@ The code can be installed by running python setup.py install. The following dist
 
 * *PRIIPSCalcs* - calculations for PRIIPS statistics
 
-
+### Robust Correlations
 There are also routines for calculation of useful multivariate statistics relating to correlation
 * *Multivariate T-Distribution* - multivariate distribution including fat tails
 * *correlations* - various adjustments for serial correlation in financial returns
 
+### Allocation Routines
+There are also some routines for asset allocation
+* *Black-Litterman* - Black-Litterman asset-allocation with full testing
+* *robust_pf* - robust portfolio optimisation using adjusted utility function
 
-And a few useful plotting routines
+### Statistical Plots
+And a few useful plotting routines for statistical fitting:
 * *plot_qq* - multiple qq plots on a single figure
 * *plot_hist* - multiple distribution comparisons on a single histogram
 * *plot_log_cdf* - plots the Cumulative Density Function tails and compares to the sample
+* *plot_hist_fit* - plot a histogram with the theoretical fit
+* *plot_ks* - CDFs with Kolmogorov-Smirnov test applied
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -103,6 +116,8 @@ There are a variety of example Jupyter notebooks available. Please see:
 * Generalised Skew-T -  https://colab.research.google.com/drive/12qVk4Dtt5uyoWGHk1aUT-_J257qXfXRz?usp=sharing for an example of fitting the 
 Generalised Skew-T and the Levy-Stable distributions to equity market returns.
 * Robust Correlations - https://colab.research.google.com/drive/1ujzWr-77CfduNeqmcSP84_xR79d1HxPd?usp=sharing for an example of fitting robust correlation matrices
+* Black Litterman - https://colab.research.google.com/drive/1fd2FSpaY5m2ysXFrOZ0qeyI79gLyCEqo?usp=sharing for an example of using the Black-Litterman in practice
+* Robust Allocation - https://colab.research.google.com/drive/15VaMidw0e9YswpWMUpi_gYcDL5UGdaIJ?usp=sharing for an example of using robust allocations
 
 ### Contact
 Please contact Tim Wilding if you have any questions or suggestions. Thanks for any feedback.

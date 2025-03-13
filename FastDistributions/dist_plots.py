@@ -1,8 +1,9 @@
 """
-Useful statistical plots such as
+Useful statistical plots such as:
  plot_qq - generalised qq plot that can take multiple distributions,
  plot_indexed_prices - plot all returns referenced to 100 on start date
  plot_hist_fit - plot a histogram with the theoretical fit
+ plot_ks - CDFs with Kolmogorov-Smirnov test applied
  plot_function - plot a generic function on a chart
  plot_log_function - plots dictionary of functions on a log-log scale
 """

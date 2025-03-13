@@ -154,7 +154,7 @@ def rolling_backtest_date_function(
             rolling_window_start = start_date - relativedelta(
                 years=rolling_window_years
             )  # 10 years minus leap year days
-        except:
+        except Exception as e:
             temp_date = start_date - timedelta(days=1.0)
             rolling_window_start = temp_date - relativedelta(
                 years=rolling_window_years
