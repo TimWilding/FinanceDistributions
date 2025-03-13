@@ -601,8 +601,12 @@ def plot_ks(index_ret, dist, dist_name, index_name, xlabel='LogReturn', ax=None)
         ax = plt.gca()
         show = True
     x_range = np.quantile(index_ret, [0.001, 0.999])
-    x_min = np.maximum(x_range[1], dist.ppf(0.999))  # index_ret.min()
-    x_max = np.minimum(x_range[0], dist.ppf(0.001))  # index_ret.max()
+    try:
+        x_min = np.maximum(x_range[1], dist.ppf(0.999))  # index_ret.min()
+        x_max = np.minimum(x_range[0], dist.ppf(0.001))  # index_ret.max()
+    except ValueError:
+        x_min = x_range[1]
+        x_max = x_range[0]
 
     x_vals = np.linspace(x_min, x_max, 200)
     cdf = dist.cdf(x_vals)
