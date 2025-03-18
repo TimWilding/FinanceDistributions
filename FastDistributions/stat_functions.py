@@ -355,3 +355,37 @@ def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=
     if count > 0:
         print("Value of M set too low in rejection block sampling routine")
     return samples
+
+def _akaike_ic(no_params, ll):
+    """
+    Calculate the Akaike Information Criterion (AIC) for a model.
+    AIC = 2k - 2ln(L)
+    where k = number of parameters in the model. Lower values are better.
+    no_params = number of parameters in the model
+    ll = log likelihood of the model
+    """
+    return 2 * no_params - 2 * ll
+
+def _bayesian_ic(no_params, ll, no_obs):
+    """
+    Calculate the Bayesian Information Criterion (BIC) for a model.
+    BIC = kln(n) - 2ln(L)
+    where k = number of parameters in the model, n = number of observations"
+    """
+    return no_params * np.log(no_obs) - 2 * ll
+
+def information_criteria(model, ret_values):
+    """
+    Calculate AIC and BIC for a model
+    model = distribution model,
+    ret_values = array of returns
+    """
+    ll = np.sum(model.logpdf(ret_values))
+    no_obs = len(ret_values)
+    try:
+        no_params = model.no_params
+    except AttributeError:
+        no_params = len(model.args)
+    bic = _bayesian_ic(no_params, ll, no_obs)
+    aic = _akaike_ic(no_params, ll)
+    return (ll, bic, aic, no_params, no_obs)

@@ -64,7 +64,7 @@ def log_pdf_johnson_su(x, gamma, delta, xi, lambd):
         raise ValueError("delta must be positive.")
 
     z = (x - xi) / lambd
-    sinh_inv = np.arcsinh(z)
+    sinh_inv = np.arcsinh(z) # as z->infinity, sinh_inv->ln(z)+ln(2)
 
     transformed = gamma + delta * sinh_inv
 
@@ -99,6 +99,10 @@ class JohnsonSU(rv_continuous):
         self.delta = delta
         self.lambd = scale
         self.xi = loc
+
+    @property
+    def no_params(self):
+        return 4
 
     def _pdf(self, x):
         pd = np.exp(self._logpdf(x))

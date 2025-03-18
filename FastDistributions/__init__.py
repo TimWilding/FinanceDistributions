@@ -48,6 +48,7 @@ from FastDistributions.stat_functions import (
     rolling_backtest,
     rolling_backtest_date_function,
     edf_stats,
+    information_criteria,
 )
 from FastDistributions.regress_calcs import sample_regress
 from FastDistributions.allocation_recipes import (

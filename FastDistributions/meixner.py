@@ -202,7 +202,11 @@ class Meixner(rv_continuous):
         self.mu = loc
         self._jsu_dist = None
         self._max_ratio = 1.0
-
+    
+    @property
+    def no_params(self):
+        return 4
+    
     def _pdf(self, x):
         pd = np.exp(self._logpdf(x))
         if isinstance(pd, (float, np.float64)):
