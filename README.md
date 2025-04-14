@@ -44,7 +44,7 @@ The following distributions are added:
 * *LevyStableInterp* - an interpolated version of the Levy Stable distribution for fast fitting
 * *GeneralisedSkewT* - an analytical distribution with skewness and fat tails that can be used for models
 * *EntropyDistributions* - a generalisation of the Normal Distribution to include skewness and kurtosis based on the principles of maximum entropy
-* *MeixnerDistribution* - a Generalised HyperSecant Distribution that includes skewness and kurtosis parameters. Includes fast random variable generation using rejection sampling bsaed on the method of Grigoletto
+* *MeixnerDistribution* - a Generalised HyperSecant Distribution that includes skewness and kurtosis parameters. Includes fast random variable generation using rejection sampling based on the method of Grigoletto
 * *Johnson SU* - the unbounded version of the Johnson distribution
 
 * *fit_tail_model* - fits a Generalised Pareto Distribution to the tail of a particular sample (Extreme Value Theory)
