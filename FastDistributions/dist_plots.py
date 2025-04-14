@@ -90,9 +90,10 @@ def plot_reg_errors(
     watermark=None,
 ):
     """
-    Plot a comparison of regression coefficients from two models using the data in coefficients1 and coefficients2
+    Plot a comparison of regression coefficients from two models using the data
+    in coefficients1 and coefficients2
     """
-    (fig, ax) = plt.subplots(figsize=(10, 5))
+    (_, ax) = plt.subplots(figsize=(10, 5))
     # Define the data
 
     # Set the number of variables
@@ -204,7 +205,7 @@ def plot_mahal_dist(mahal_dist, dates, num_assets, title, cutoff=0.95, ax=None):
 
 def plot_multi_function(
     dict_fn,
-    x_lim=[-6, 6],
+    x_lim=None,
     y_lim=None,
     n=10000,
     title="Function",
@@ -226,13 +227,17 @@ def plot_multi_function(
         plt.figure()
         ax = plt.gca()
         show = True
+    if x_lim is None:
+        x_lim = [-6, 6]
     t_min = x_lim[0]
     t_max = x_lim[1]
-    # Used t_vals & y_vals to separate ourselves from the y & t symbols used to build the solution to the ODE
+    # Used t_vals & y_vals to separate ourselves from the y & t
+    # symbols used to build the solution to the ODE
     t_vals = np.linspace(
         t_min, t_max, n
     )  # build a grid of t values to use for calculating the function values
-    #    y_vals = fn(t_vals) # Apply the function to the grid of t values to get a python array of function values
+    # y_vals = fn(t_vals) # Apply the function to the grid of t values
+    # to get a python array of function values
     y_max = 0.0
     y_min = 0.0
 
@@ -257,7 +262,8 @@ def plot_multi_function(
     ax.set_title(title)
 
     ax.set_ylim([y_min, y_max])
-    # plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0)) # plot tick marks every 0.1 along the axis
+    # plt.yticks(np.arange(y_min, y_max, (y_max - y_min)/10.0))
+    # plot tick marks every 0.1 along the axis
     ax.set_xlim([t_min, t_max])
     ax.legend()
     if show:
@@ -265,7 +271,7 @@ def plot_multi_function(
 
 
 def plot_function(
-    fn, x_lim=[-6, 6], y_lim=None, n_pts=10000, title="Function", fn_2=None
+    fn, x_lim=None, y_lim=None, n_pts=10000, title="Function", fn_2=None
 ):
     """
     Takes a function and produces a graph using the limits
@@ -275,6 +281,8 @@ def plot_function(
     y_lim = min and max of function values (should I set a default)
     n_pts = number of points to use to evaluate function
     """
+    if x_lim is None:
+        x_lim=[-6, 6]
     t_min = x_lim[0]
     t_max = x_lim[1]
     # build a grid of t values to use for calculating the function values
@@ -468,7 +476,7 @@ def _plot_log_cdf_function(
     left_tail=False,
     ref_fn=None,
     ret_marker="kx",
-    x_lim=[-3, 2],
+    x_lim=None,
     y_lim=None,
     n_pts=100,
     title="CDF",
@@ -484,7 +492,9 @@ def _plot_log_cdf_function(
     y_lim = min and max of function values (should I set a default)
     n = number of points to use to evaluate cumulative density function
     """
-    ecdf = scipy.stats.ecdf(ret_data)
+    sample_pdf = scipy.stats.ecdf(ret_data)
+    if x_lim is None:
+        x_lim = [-3, 2]
     t_min = x_lim[0]
     t_max = x_lim[1]
     # build a grid of t values to use for calculating the function values
@@ -505,10 +515,10 @@ def _plot_log_cdf_function(
         plt.plot(t_vals, f_pdf, ref_fn[1], label=ref_fn[2])
 
     if left_tail:
-        f_pdf = ecdf.cdf.evaluate(-t_vals)
+        f_pdf = sample_pdf.cdf.evaluate(-t_vals)
         plt.plot(t_vals, f_pdf, ret_marker, label="Sample")
     else:
-        f_pdf = 1 - ecdf.cdf.evaluate(t_vals)
+        f_pdf = 1 - sample_pdf.cdf.evaluate(t_vals)
         plt.plot(t_vals, f_pdf, ret_marker, label="Sample")
 
     plt.xlabel("x")
@@ -529,7 +539,7 @@ def plot_log_cdf(
     dict_dist,
     ret_data,
     ref_fn=None,
-    x_lim=[-3, 2],
+    x_lim=None,
     y_lim=None,
     n_pts=25,
     ret_marker="kx",
@@ -549,7 +559,8 @@ def plot_log_cdf(
      - ret_marker - marker to use for sample data CDF
      - series name - used in title of the CDF plots
     """
-
+    if x_lim is None:
+        x_lim = [-3, 2]
     _, _ = plt.subplots(nrows=1, ncols=2)
 
     plt.subplot(1, 2, 1)

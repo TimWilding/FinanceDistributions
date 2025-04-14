@@ -4,13 +4,13 @@ Utility functions for downloading data from e.g. yfinance
 
 import os
 import os.path
+import hashlib
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
 from dateutil.relativedelta import relativedelta
 from pandas import read_csv
-import hashlib
 import requests
 
 
@@ -131,12 +131,12 @@ def read_cached_excel(url, cache_dir="cache", **read_excel_kwargs) -> pd.DataFra
     if not os.path.exists(local_filename):
         # Download the file if it is not cached
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=100)
             response.raise_for_status()  # Raise an error for bad responses
             with open(local_filename, "wb") as f:
                 f.write(response.content)
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"Failed to download the file from {url}. Error: {e}")
+            raise RuntimeError(f"Failed to download the file from {url}. Error: {e}") from e
 
     # Read the Excel file into a DataFrame and return it
     return pd.read_excel(local_filename, **read_excel_kwargs)
