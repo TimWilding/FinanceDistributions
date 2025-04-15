@@ -1,28 +1,31 @@
 """
-Use https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levy_stable.html to build a grid of
-values for the shape of the Levy Stable distribution characterised by log of the probability distribution
-function. This grid can then be used for interpolation using the Scipy RegularGridInterpolator. Levy Stable
-distributions are heavy-tailed distributions that are often used to represent equity market behaviour.
+Use https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levy_stable.html to build a
+grid of values for the shape of the Levy Stable distribution characterised by log of the probability
+distribution function. This grid can then be used for interpolation using the Scipy
+RegularGridInterpolator. Levy Stable distributions are heavy-tailed distributions that are often
+used to represent equity market behaviour.
 
-https://en.wikipedia.org/wiki/Stable_distribution contains an extensive discussion of the distribution
-The Levy Stable distribution is characterised by two parameters - alpha and beta
+https://en.wikipedia.org/wiki/Stable_distribution contains an extensive discussion of the
+distribution. The Levy Stable distribution is characterised by two parameters - alpha and beta
 - 0 <= alpha <= 2.0 - stability parameter
 - -1.0 <= beta <=1.0 - skewness parameter
 
 alpha = 2.0 is equivalent to the Normal distribution
-"""
 
+Use Python build_levy_interpolator.py to build the interpolator and save it to a file. The
+file is split into several files so that they can be uploaded to GitHub. The files are saved in the
+interp_data directory.
+
+The file can then be used in the LevyStable class to get the PDF value for given alpha, beta and x.
+"""
 import math
 import pickle
 import time
 import numpy as np
 from scipy.stats import levy_stable
 from scipy.interpolate import RegularGridInterpolator
-from .splich import file_split
-
-
 from joblib import Parallel, delayed
-
+from .splich import file_split
 
 # Here is the grid - what is a good grid?
 N_ALPHA = 150
@@ -52,7 +55,7 @@ def process(i):
 
 
 Parallel(n_jobs=32, require="sharedmem")(delayed(process)(i) for i in range(N_ALPHA))
-print("Parallel Grid calc time = {0} s".format(time.time() - start))
+print(f"Parallel Grid calc time = {time.time() - start:.2f} s")
 # Define a RegularGridInterpolator - note can specify default interpolation method
 # 'linear' is the default, but 'cubic' or 'spline' can be used.
 min_pdf_val = np.min(parallel_pdf_vals[np.isfinite(parallel_pdf_vals)])
@@ -63,28 +66,12 @@ interp = RegularGridInterpolator(
     (alpha_vals, beta_vals, x_vals), parallel_pdf_vals, method="linear"
 )
 
-# Calculation 2 - Use straight for loop
-# start=time.time()
-# other_pdf_vals = np.zeros((N_ALPHA, N_BETA, N_PTS))
-# for i in range(N_ALPHA):
-#     for j in range(N_BETA):
-#         other_pdf_vals[i, j, :] = np.log(levy_stable(alpha_vals[i], beta_vals[j]).pdf(x_tan_vals))
-# print('Alternative Grid calc time = {0} s'.format(time.time()-start))
 
-# Calculation 3 - uses vectorised function to calculate the grid values
-# start = time.time()
-# Define the log-likelihood function for use in the calculation
-# ll_levy = lambda x, y, z : np.log(levy_stable(x, y).pdf(np.tan(z)))
-# f_ll_levy = np.vectorize(ll_levy)
-# alphag, betag, xg = np.meshgrid(alpha_vals, beta_vals, x_vals, indexing='ij', sparse=True)
-# pdf_vals = f_ll_levy(alphag, betag, xg)
-# print('Grid calc time = {0} s'.format(time.time()-start))
-# interp = RegularGridInterpolator((alpha_vals, beta_vals, x_vals), pdf_vals)
-with open(r'data\ll_levy_stable_interp.pickle', "wb") as handle:
+with open(r'interp_data\ll_levy_stable_interp.pickle', "wb") as handle:
     pickle.dump(interp, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-# Split the file into 5 so we can handle it
-file_split(r'data\ll_levy_stable_interp.pickle', 5)
+# Split the file into 5 so Github can handle it
+file_split(r'interp_data\ll_levy_stable_interp.pickle', 5)
 
 # We should also run some statistics on the rate of change in the function values
 # across the grid
@@ -100,10 +87,10 @@ test_vals = np.abs(
     - parallel_pdf_vals[:, :, 1:(N_PTS - 2)]
 )
 # Test out the function
-alpha_test = 1.75
-beta_test = 0.52
-x_test = 3.17
-ls = interp([alpha_test, beta_test, np.arctan(x_test)])
+ALPHA_TEST = 1.75
+BETA_TEST = 0.52
+X_TEST = 3.17
+ls = interp([ALPHA_TEST, BETA_TEST, np.arctan(X_TEST)])
 print(f"Interpolated value = {ls}")
-av = np.log(levy_stable(alpha_test, beta_test).pdf(x_test))
+av = np.log(levy_stable(ALPHA_TEST, BETA_TEST).pdf(X_TEST))
 print(f"Actual value = {av}")
