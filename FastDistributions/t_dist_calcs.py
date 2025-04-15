@@ -65,7 +65,7 @@ class TDist:
     def simulate(self, num_obs, rng_sim=None):
         """
         generate T-Dist random numbers with a positive semi-definite covariance matrix a
-        and a gvien mean
+        and a given mean
         """
 
         rng = rng_sim
@@ -272,7 +272,8 @@ class TDist:
 
             delta_tau = np.max(np.abs(tau - tau_prev))
             _print_progress(display_progress,
-                            f"{iter_num}         {nu:7.2f} {delta_tau:7.2f}            {ll:7.2f}      {ll_target:7.2f}")
+                            f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"\
+                            f"            {ll:7.2f}      {ll_target:7.2f}")
 
             # Maximum Likelihood
             samp_ave, samp_covar = _wt_stats(tau, returns_data)

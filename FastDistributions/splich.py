@@ -1,33 +1,34 @@
-# Splich.py
-# Splits files into parts, or in chunk_size
-# Splich is a file splitting tool that allows you to split a file into parts, and reassembles them
+""" Splich.py
+Splits files into parts, or in chunk_size
+Splich is a file splitting tool that allows you to split a file into parts, and reassembles them
 
-# https://github.com/shine-jayakumar/splich
+https://github.com/shine-jayakumar/splich
 
-# Author: Shine Jayakumar
-# https://github.com/shine-jayakumar
-#
-# MIT License
+Author: Shine Jayakumar
+https://github.com/shine-jayakumar
 
-# Copyright (c) 2022 Shine Jayakumar
+MIT License
 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+Copyright (c) 2022 Shine Jayakumar
 
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
 from io import BytesIO
 import os
 import glob
@@ -73,10 +74,10 @@ def file_split(file, parts=None, chunk_size=None):
     fname = os.path.splitext(fname)[0]
 
     vvprint("Generating hash")
-    hash = gethash(file)
+    file_hash = gethash(file)
     start_time = datetime.today().strftime("%m%d%Y_%H%M")
 
-    vvprint(f"Hash: {hash}\n\n")
+    vvprint(f"Hash: {file_hash}\n\n")
     vvprint(f"Reading file: {file}")
 
     with open(file, "rb") as fh:
@@ -100,13 +101,13 @@ def file_split(file, parts=None, chunk_size=None):
         hashfilename = f"{fname}_hash_{start_time}"
         hashfile_path = os.path.join(fdir, hashfilename)
         vvprint(f"Hashfile: {hashfile_path}")
-        with open(hashfile_path, "w") as hashfile:
-            hashfile.write(hash)
+        with open(hashfile_path, "w", encoding="utf-8") as hashfile:
+            hashfile.write(file_hash)
 
         return True
 
 
-def file_stitch(file, outfile=None, hashfile=None):
+def file_stitch(file, outfile=None):
     """
     Stitches the parts together
     """
@@ -150,10 +151,10 @@ def gethash(file):
     """
     Returns the hash of file
     """
-    hash = None
+    file_hash = None
     with open(file, "rb") as fh:
-        hash = hashlib.sha256(fh.read()).hexdigest()
-    return hash
+        file_hash = hashlib.sha256(fh.read()).hexdigest()
+    return file_hash
 
 
 def checkhash(file, hashfile):
@@ -163,7 +164,7 @@ def checkhash(file, hashfile):
     curhash = None
     orghash = None
     curhash = gethash(file)
-    with open(hashfile, "r") as fh:
+    with open(hashfile, "r", encoding="utf-8") as fh:
         orghash = fh.read()
 
     return curhash == orghash
@@ -173,7 +174,6 @@ def vvprint(text):
     """
     print function to function only when verbose mode is on
     """
-    global VERBOSE
     if VERBOSE:
         print(text)
 
