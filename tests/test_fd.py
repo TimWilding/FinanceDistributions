@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 from scipy.integrate import quad
+from scipy.stats import skew, kurtosis, kstest
 import matplotlib.pyplot as plt
 import seaborn as sns
 import FastDistributions as fd
@@ -173,16 +174,25 @@ def test_robust_correl():
     (samp_ave, samp_covar, nu, _) = fd.TDist.em_fit(pivot_df.values, dof=-8.0)
     np.testing.assert_approx_equal(nu, 4.451310494728308, 4)
     td = fd.TDist(samp_ave, samp_covar, nu)
-    x = td.simulate(1000)
+    x = td.simulate(1200)
+    (_, _, _, _) = fd.TDist.em_fit(x, dof=-8.0)
     print(np.mean(x, axis=0))
-    _, _ = td.mahal_dist(pivot_df.values)
-    _ = td.cumdf(pivot_df.values)
+    tmd, _ = td.mahal_dist(pivot_df.values)
+    tcdf = td.cumdf(pivot_df.values)
     _ = fd.corr_conv(samp_covar)
     (_, norm_cov, _, _) = fd.TDist.em_fit(pivot_df.values, dof=1000)
     norm_corr = fd.corr_conv(norm_cov)
     act_corr = pivot_df.corr()
     corr_diff = norm_corr - act_corr
     print(corr_diff)
+    x = td.simulate(5000000)
+    tmd_rand, _ = td.mahal_dist(x)
+    comparison_matrix = tmd_rand[:, np.newaxis] <= tmd
+
+# Count the True values in each column (representing an element of tmd[0])
+    counts = np.sum(comparison_matrix, axis=0) / tmd_rand.shape[0]
+    np.testing.assert_allclose(counts, tcdf, atol=2e-3)
+
     print("Finished")
 
 
@@ -407,7 +417,7 @@ def approx_stats_tests(dist):
     distribution
     """
 
-    mean, var, skew, kurt = dist.stats(moments="mvsk")
+    mean, var, skewness, kurt = dist.stats(moments="mvsk")
     sd = np.sqrt(var)
     mean_est = quad(lambda x: x * dist.pdf(x), -np.inf, np.inf)[0]
     m2_est = quad(lambda x: x * x * dist.pdf(x), -np.inf, np.inf)[0]
@@ -420,7 +430,7 @@ def approx_stats_tests(dist):
     )[0]
     np.testing.assert_approx_equal(mean, mean_est, 1e-6)
     np.testing.assert_approx_equal(sd, sd_est, 1e-6)
-    np.testing.assert_approx_equal(skew, skew_est, 1e-6)
+    np.testing.assert_approx_equal(skewness, skew_est, 1e-6)
     np.testing.assert_approx_equal(kurt, kurt_est, 1e-6)
     return
 
@@ -551,8 +561,9 @@ def test_fit_meixner():
 
     meix_rv = meix.rvs(size=10000)
 
-    fd.plot_hist_fit(meix_rv, "TEST DIST", lst_dist, ylim=[1e-5,
-                     0.8], nbins=50, log_scale=True)
+    fd.plot_hist_fit(
+        meix_rv, "TEST DIST", lst_dist, ylim=[1e-5, 0.8], nbins=50, log_scale=True
+    )
 
     # https://demonstrations.wolfram.com/NonuniquenessOfOptionPricingUnderTheMeixnerModel/
     def cdf_su_shape(x, beta, delta):
@@ -680,7 +691,62 @@ def test_generalised_skewt():
 #    df_csv = pd.DataFrame({'x': x, 'cdf': cdf_vals})
 #    df_csv.to_csv("gsd_cdf.csv")
 #    df.to_csv("gsd_prob.csv")
+def test_information_criteria():
+    """
+    Test the information criteria for different distributions
+    """
+    df_ret = fd.get_test_data()
 
+    sp_ret = df_ret[df_ret.Ticker == "^GSPC"]["LogReturn"].values
+    gsd_fit = fd.GeneralisedSkewT.fitclass(sp_ret, display_progress=False)
+
+    norm_dist = norm.fit(sp_ret)
+    norm_fit = norm(norm_dist[0], norm_dist[1])
+
+    print("Normal Distribution")
+    print(fd.information_criteria(norm_fit, sp_ret))
+    print("Generalised Skew-T")
+    print(fd.information_criteria(gsd_fit, sp_ret))
+
+
+    report_model(gsd_fit, sp_ret)
+
+
+    print("Finished")
+
+
+def report_model(model, returns):
+    """
+    Report the model statistics and information criteria
+    """
+    print('===============================================')
+    print('Model Fit Report:')
+    print('============================================')
+    ll, aic, bic, no_params, no_obs = fd.information_criteria(model, returns)
+    print(f'Parameters: {no_params}\t\t\tLog Likelihood: {ll:.2f}')
+    print(f'AIC: {aic:.4f}\t\t BIC: {bic:.4f}')
+    print(f'Number of Observations: {no_obs}')
+    (mu, var, skewness, kurt) = model.stats(moments='mvsk')
+    dist_mu = np.mean(returns)
+    dist_var = np.var(returns)
+    dist_skew = skew(returns)
+    dist_kurt = kurtosis(returns)
+    ks_res = kstest(returns, model.cdf)
+
+    print('Model Statistics:\t\t\tDistribution Statistics:')
+    print('===============================================')
+    print(f'Mean:     {mu:.4f}\t\t\tMean:     {dist_mu:.4f}')
+    print(f'St. Dev:  {np.sqrt(var):.4f}\t\t\tSt.Dev:  {np.sqrt(dist_var):.4f}')
+    print(f'Skewness: {skewness:.3f}\t\t\tSkewness: {dist_skew:.3f}')
+    print(f'Kurtosis: {kurt:.3f}\t\t\tKurtosis: {dist_kurt:.3f}')
+    print('CDF Statistics')
+    print('===============================================')
+    a_squared, w_squared, k_s_stat, u_squared, kuiper_v = fd.edf_stats(returns, model)
+    print(f'KS Stat: {k_s_stat:.4f}\t\t\tProb: {ks_res.pvalue:.4f}')
+    print(f'Kuiper: {kuiper_v:.4f}\t\t\tWatson: {w_squared:.4f}')
+    print(f'U Stat: {u_squared:.4f}\t\t\tAnderson: {a_squared:.4f}')
+
+    print('Finished')
 
 if __name__ == "__main__":
     test_dists()

@@ -155,6 +155,7 @@ def rolling_backtest_date_function(
                 years=rolling_window_years
             )  # 10 years minus leap year days
         except Exception as e:
+            print(e)
             temp_date = start_date - timedelta(days=1.0)
             rolling_window_start = temp_date - relativedelta(
                 years=rolling_window_years
@@ -303,7 +304,8 @@ def edf_stats(x, dist: rv_continuous):
     return a_squared, w_squared, k_s_stat, u_squared, kuiper_v
 
 
-def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=2.7, max_samples=100):
+def reject_block_sample(dist, gen_dist, size=None, random_state=None,
+                        max_ratio=2.7, max_samples=100):
     """
     Use the rejection sampling method to generate samples from a
     distribution that is difficult to sample from directly.
@@ -318,7 +320,7 @@ def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=
     def pdf_ratio_fn(x):
         return -dist._pdf(x) / gen_dist.pdf(x)
 
-    M = 1.1 * max_ratio  # Safety margin factor (should be >= max(p(x)/q(x)))
+    safety_margin = 1.1 * max_ratio  # Safety margin factor (should be >= max(p(x)/q(x)))
     # find max p/q
     samples = np.array([])
     tot_size = np.prod(size)
@@ -339,10 +341,10 @@ def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=
 
         pdf_ratio = -pdf_ratio_fn(x)
         # Compute acceptance probability
-        accept_prob = pdf_ratio / M
+        accept_prob = pdf_ratio / safety_margin
 
         if np.any(accept_prob > 1):
-            print(f"x = {x[accept_prob > 1]}, pdf_ratio = {pdf_ratio[accept_prob > 1]}, M={M}")
+            print(f"x = {x[accept_prob > 1]}, pdf_ratio = {pdf_ratio[accept_prob > 1]}, M={safety_margin}")
             count = count + len(x[accept_prob > 1])
 
         if np.any(pdf_ratio > max_pq):
@@ -356,6 +358,7 @@ def reject_block_sample(dist, gen_dist, size=None, random_state=None, max_ratio=
         print("Value of M set too low in rejection block sampling routine")
     return samples
 
+
 def _akaike_ic(no_params, ll):
     """
     Calculate the Akaike Information Criterion (AIC) for a model.
@@ -366,6 +369,7 @@ def _akaike_ic(no_params, ll):
     """
     return 2 * no_params - 2 * ll
 
+
 def _bayesian_ic(no_params, ll, no_obs):
     """
     Calculate the Bayesian Information Criterion (BIC) for a model.
@@ -373,6 +377,7 @@ def _bayesian_ic(no_params, ll, no_obs):
     where k = number of parameters in the model, n = number of observations"
     """
     return no_params * np.log(no_obs) - 2 * ll
+
 
 def information_criteria(model, ret_values):
     """
