@@ -272,7 +272,7 @@ class TDist:
 
             delta_tau = np.max(np.abs(tau - tau_prev))
             _print_progress(display_progress,
-                            f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"\
+                            f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"
                             f"            {ll:7.2f}      {ll_target:7.2f}")
 
             # Maximum Likelihood

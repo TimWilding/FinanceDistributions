@@ -40,12 +40,12 @@ def sharpe_ratio(excess_returns, periods_in_year=1):
 
     sr = mu / sigma
     n = excess_returns.shape[0]
-    V_g = (1 + 0.5 * sr**2) / n
+    v_g = (1 + 0.5 * sr**2) / n
 
     mu_annual = periods_in_year * mu
     sigma_annual = np.sqrt(periods_in_year) * sigma
     sr_annual = mu_annual / sigma_annual
-    sr_sd = np.sqrt(periods_in_year * V_g)
+    sr_sd = np.sqrt(periods_in_year * v_g)
 
     return (sr_annual, mu_annual, sigma_annual, sr_sd)
 
@@ -85,9 +85,9 @@ def psr(sr, skew, kurt, srb, periods_in_year, n):
     P(SR>benchmark_sharpe_ratio):
          probability of SR being better than benchmark
     """
-    V_g = (1 + (1 / 2) * sr**2 - skew * sr + ((kurt - 3) / 4) * sr**2) / (n - 1)
+    v_g = (1 + (1 / 2) * sr**2 - skew * sr + ((kurt - 3) / 4) * sr**2) / (n - 1)
     srb = srb / np.sqrt(periods_in_year)
-    prob_sr = scipy.stats.norm.cdf((sr - srb) / np.sqrt(V_g))
+    prob_sr = scipy.stats.norm.cdf((sr - srb) / np.sqrt(v_g))
     return prob_sr
 
 
@@ -134,10 +134,10 @@ def probabilistic_sharpe_ratio(
     kurt = scipy.stats.kurtosis(excess_returns, fisher=False)
     sr = mu / sigma
     n = excess_returns.shape[0]
-    V_g = (1 + (1 / 2) * sr**2 - skew * sr + ((kurt - 3) / 4) * sr**2) / (n - 1)
+    v_g = (1 + (1 / 2) * sr**2 - skew * sr + ((kurt - 3) / 4) * sr**2) / (n - 1)
     srb = sharpe_ratio_benchmark / np.sqrt(periods_in_year)
-    prob_sr = scipy.stats.norm.cdf((sr - srb) / np.sqrt(V_g))
-    return (prob_sr, np.sqrt(periods_in_year) * sr, np.sqrt(periods_in_year * V_g))
+    prob_sr = scipy.stats.norm.cdf((sr - srb) / np.sqrt(v_g))
+    return (prob_sr, np.sqrt(periods_in_year) * sr, np.sqrt(periods_in_year * v_g))
 
 
 def omega_ratio(returns, returns_threshold=0, periods_in_year=12, geom_returns=True):
@@ -214,11 +214,11 @@ def min_track_record_length(sr, sr_std, sharpe_ratio_benchmark=0.0, prob=0.95):
 
     Notes
     =====
-    minTRL = minimum of returns/samples needed (with same SR and SR_STD) to accomplish a PSR(SR*) > `prob`
+    minTRL = minimum of returns/samples needed (with same SR and SR_STD) to
+             accomplish a PSR(SR*) > `prob`
     PSR(SR*) = probability that SR^ > SR*
     SR^ = sharpe ratio estimated with `returns`, or `sr`
     SR* = `sr_benchmark`
-
 
     """
     min_trl = (
