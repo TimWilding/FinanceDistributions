@@ -232,8 +232,10 @@ class TDist:
         prev_ll = 0.0
         ll = 0.0
         delta_ll = 0.0
-        _print_progress(display_progress,
-                        "Iteration    Nu      DeltaTau        LL            LL_target")
+        _print_progress(
+            display_progress,
+            "Iteration    Nu      DeltaTau        LL            LL_target",
+        )
 
         for iter_num in range(1, max_iters + 1):
 
@@ -272,9 +274,11 @@ class TDist:
             tau[tau > MAX_TAU] = MAX_TAU
 
             delta_tau = np.max(np.abs(tau - tau_prev))
-            _print_progress(display_progress,
-                            f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"
-                            f"            {ll:7.2f}      {ll_target:7.2f}")
+            _print_progress(
+                display_progress,
+                f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"
+                f"            {ll:7.2f}      {ll_target:7.2f}",
+            )
 
             # Maximum Likelihood
             samp_ave, samp_covar = _wt_stats(tau, returns_data)
@@ -282,21 +286,19 @@ class TDist:
                 if np.abs(ll - ll_target) < tol:
                     break
 
-        _print_progress(display_progress,
-                        f"Total time taken: {time.time()-start} s")
+        _print_progress(display_progress, f"Total time taken: {time.time()-start} s")
 
         return (samp_ave, samp_covar, nu, tau)
-    
+
     @staticmethod
-    def regress(y, X, max_iters=100, tol=1e-10,
-                display_progress=True, dof=-1.0):
+    def regress(y, X, max_iters=100, tol=1e-10, display_progress=True, dof=-1.0):
         """
-        Use the EM Algorithm to fit a regression mode with 
+        Use the EM Algorithm to fit a regression mode with
         T-distributed residuals to the dataset
 
         Inputs:
         =============
-        y: dependent variable  
+        y: dependent variable
         X: independent variables
         max_iters: maximum number of iterations
         tol: tolerance for convergence
@@ -308,7 +310,7 @@ class TDist:
         =============
         b_hat: estimated regression coefficients
         s: estimated scale of the residuals
-        nu: estimated degrees of freedom for the T-distribution 
+        nu: estimated degrees of freedom for the T-distribution
         """
         nobs = y.shape[0]
         start = time.time()
@@ -319,56 +321,54 @@ class TDist:
             fit_dof = True
             nu = 8.0
 
-    # Initialise with the OLS regression parameters
+        # Initialise with the OLS regression parameters
         tau = np.ones(nobs)
         b_hat, s = wls_regress(y, X, tau)
         log_likelihood = []
         prev_ll = 0.0
         ll = 0.0
         delta_ll = 0.0
-        _print_progress(display_progress,
-                        "Iteration    Nu      DeltaTau        LL            LL_target")
+        _print_progress(
+            display_progress,
+            "Iteration    Nu      DeltaTau        LL            LL_target",
+        )
 
         for iter_num in range(1, max_iters + 1):
 
-        # M-step calculate the regression coefficients given the
-        # current weighting
+            # M-step calculate the regression coefficients given the
+            # current weighting
 
             b_hat, s = wls_regress(y, X, tau)
             e = y - X @ b_hat
-            mah_dist = (e*e)/s
-
-
-
+            mah_dist = (e * e) / s
 
             if fit_dof:
                 nu, _, _ = TDist.optimisedegreesoffreedom(
-                        nu, mah_dist, 1, np.log(s), MIN_DOF, MAX_DOF
-                    )
-
+                    nu, mah_dist, 1, np.log(s), MIN_DOF, MAX_DOF
+                )
 
             prev_ll = ll
 
             ll = np.sum(TDist.llcalc(nu, mah_dist, 1, np.log(s)))
             log_likelihood.append(ll)
             ll_target = ll
-# Confirm the calculation using the scipy stats t-distribution
-#       log_likelihoods = t.logpdf(e, df=nu, loc=0, scale=np.sqrt(s))
-#       total_log_likelihood = np.sum(log_likelihoods)
-#        print(total_log_likelihood)
+            # Confirm the calculation using the scipy stats t-distribution
+            #       log_likelihoods = t.logpdf(e, df=nu, loc=0, scale=np.sqrt(s))
+            #       total_log_likelihood = np.sum(log_likelihoods)
+            #        print(total_log_likelihood)
             if iter_num > 1:
                 delta_ll_prev = delta_ll
                 delta_ll = ll - prev_ll
-                if delta_ll_prev <=1e-10:
+                if delta_ll_prev <= 1e-10:
                     delta_ll_prev = 1e-10
                 if iter_num > 2:
                     alpha_k = delta_ll / delta_ll_prev
                     ll_target = log_likelihood[iter_num - 2] + delta_ll / max(
-                            (1 - alpha_k), 0.001
-                        )
-        # E-Step - calculate the expected value of the weighting scheme
-        # In this case, a variance scale used to weight the residual variance
-        # values
+                        (1 - alpha_k), 0.001
+                    )
+            # E-Step - calculate the expected value of the weighting scheme
+            # In this case, a variance scale used to weight the residual variance
+            # values
 
             tau_prev = tau
             tau = (nu + 1) / (nu + mah_dist)
@@ -376,16 +376,16 @@ class TDist:
             tau[tau > MAX_TAU] = MAX_TAU
 
             delta_tau = np.max(np.abs(tau - tau_prev))
-            _print_progress(display_progress,
-                            f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"
-                            f"            {ll:7.2f}      {ll_target:7.2f}")
-
+            _print_progress(
+                display_progress,
+                f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"
+                f"            {ll:7.2f}      {ll_target:7.2f}",
+            )
 
             if iter_num > 2:
                 if np.abs(ll - ll_target) < tol:
                     break
 
-        _print_progress(display_progress,
-                        f"Total time taken: {time.time()-start} s")
+        _print_progress(display_progress, f"Total time taken: {time.time()-start} s")
 
         return (b_hat, s, nu, log_likelihood)
