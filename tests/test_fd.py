@@ -210,6 +210,19 @@ def test_yf():
     df_download.to_csv("asset_returns.csv")
 
 
+def test_yf_max():
+    """
+    Test the Yahoo Finance Download
+    """
+    lst_indices = [
+        ("^SP500TR", "SP 500"),
+        ("^FTSE", "FTSE 100"),
+        ("^N225", "Nikkei 225"),
+        ("BTC-USD", "Bitcoin"),
+    ]
+    df_download = fd.download_yahoo_returns(lst_indices)
+    df_download.to_csv("max_asset_returns.csv")
+
 def test_dists():
     """
     Test the distribution fitting code using data downloaded from Yahoo Finance
@@ -287,6 +300,10 @@ def test_regress():
     pivot_df = df_prices.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
     _ = fd.sample_regress(pivot_df, "SP 500", True, True)
+
+    y = pivot_df["SP 500"].values
+    X = pivot_df.drop(columns=["SP 500"]).values
+    b_hat, s, nu, ll = fd.TDist.regress(y, X)
     print("Finished testing regression")
 
 

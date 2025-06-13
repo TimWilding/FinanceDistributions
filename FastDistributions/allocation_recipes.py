@@ -32,8 +32,8 @@ def get_pf_stats(pf_weights, expected_returns, covariances):
 
 def get_optimal_sharpe_pf(expected_returns, covariances):
     """
-    Use the typical Cornuejols recipe for a constrained Sharpe PF Optimisation with a quadratic programming
-    routine - in this case, the constraint is that
+    Use the typical Cornuejols recipe for a constrained Sharpe PF Optimisation with a
+    quadratic programming routine - in this case, the constraint is that
     all assets have positive weights
     (see, e.g., https://quant.stackexchange.com/questions/39137/how-can-i-find-the-portfolio-with-maximum-sharpe-ratio-using-lagrange-multipli/39157#39157)
     """  # noqa: E501

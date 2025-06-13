@@ -203,7 +203,7 @@ def he_litterman_lambda(t, Sigma, P, q, Omega, tau=1.0, delta=5.0, exp_returns=F
     return he_lit_lam, d_lam_dq
 
 
-def reverse_optimise(t, Sigma, delta):
+def reverse_optimise(t, sigma, delta):
     """
     Calculate the returns of the portfolio that would make
     the given portfolio mean-variance optimal with a given
@@ -211,47 +211,47 @@ def reverse_optimise(t, Sigma, delta):
     Inputs
     ========
     t = model portfolio
-    Sigma = covariance matrix
+    sigma = covariance matrix
     delta = risk aversion coefficient
     Outputs
     =======
     pi = expected returns
     """
-    pi = delta * Sigma @ t
+    pi = delta * sigma @ t
     return pi
 
 
-def unconstrained_optimal_portfolio(Sigma, mu, delta):
+def unconstrained_optimal_portfolio(sigma, mu, delta):
     """
     Calculate the unconstrained optimal portfolio given
     covariance matrix, expected returns, and risk aversion
     coefficient.
     Inputs
     ========
-    Sigma = covariance matrix
+    sigma = covariance matrix
     mu = expected returns
     delta = risk aversion coefficient
     Outputs
     =======
     x = unconstrained optimal portfolio
     """
-    x = (inv(Sigma) @ mu) / delta
+    x = (inv(sigma) @ mu) / delta
     return x
 
 
-def braga_natale_measure(t, Sigma, P, q, Omega, tau=1.0, delta=1.0, exp_returns=False):
+def braga_natale_measure(t, sigma, P, q, omega, tau=1.0, delta=1.0, exp_returns=False):
     """
     Calculate the tracking error volatility of the Black-Litterman portfolio
     and the sensitivity of the tracking error to the view
     """
     pi_hat, Sigma_hat = black_litterman_stats(
-        t, Sigma, P, q, Omega, tau, delta, exp_returns
+        t, sigma, P, q, omega, tau, delta, exp_returns
     )
     w_bl = unconstrained_optimal_portfolio(Sigma_hat, pi_hat, delta)
-    _, dlamdq = he_litterman_lambda(t, Sigma, P, q, Omega, tau, delta, exp_returns)
+    _, dlamdq = he_litterman_lambda(t, sigma, P, q, omega, tau, delta, exp_returns)
 
-    te = np.sqrt((w_bl - t) @ Sigma @ (w_bl - t))
-    dtedw = Sigma @ (w_bl - t) / te
+    te = np.sqrt((w_bl - t) @ sigma @ (w_bl - t))
+    dtedw = sigma @ (w_bl - t) / te
     f = 0.0
     if exp_returns:
         f = 1.0

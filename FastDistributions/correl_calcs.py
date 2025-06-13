@@ -129,7 +129,7 @@ def nearest_pos_def(A):
 
     A3 = (A2 + A2.T) / 2
 
-    if isPD(A3):
+    if is_positive_definite(A3):
         return A3
 
     spacing = np.spacing(np.linalg.norm(A))
@@ -144,7 +144,7 @@ def nearest_pos_def(A):
     # below suggests.
     ident = np.eye(A.shape[0])
     k = 1
-    while not isPD(A3):
+    while not is_positive_definite(A3):
         mineig = np.min(np.real(np.linalg.eigvals(A3)))
         A3 += ident * (-mineig * k**2 + spacing)
         k += 1
@@ -152,7 +152,7 @@ def nearest_pos_def(A):
     return A3
 
 
-def isPD(B):
+def is_positive_definite(B):
     """Returns true when input is positive-definite, via Cholesky"""
     try:
         _ = np.linalg.cholesky(B)

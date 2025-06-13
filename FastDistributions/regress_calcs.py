@@ -1,6 +1,7 @@
 from sklearn.preprocessing import StandardScaler
 import statsmodels.api as sm
 import pandas as pd
+import numpy as np
 
 
 def sample_regress(
@@ -31,3 +32,22 @@ def sample_regress(
     p = pd.DataFrame(pd.DataFrame({"coeff": model.params, "StdErr": model.bse}))
 
     return p.reset_index()
+
+
+
+def wls_regress(y, X, w):
+    """
+    Weighted Least-Squares using the weights given in the
+    vector w.
+    y = X * b_hat + e
+    b_hat = (X'W X)^{-1} X' W y
+
+    """
+    n = X.shape[0]
+    sw = np.sqrt(w)
+    wX = X * sw[:, np.newaxis]
+    wy = y * sw
+    b_hat = np.linalg.lstsq(wX, wy)[0]
+    e = wy - wX @ b_hat
+    s = np.sqrt(np.sum(e * e) / n)
+    return b_hat, s
