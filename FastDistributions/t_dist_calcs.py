@@ -293,8 +293,9 @@ class TDist:
     @staticmethod
     def regress(y, X, max_iters=100, tol=1e-10, display_progress=True, dof=-1.0):
         """
-        Use the EM Algorithm to fit a regression mode with
+        Use the EM Algorithm to fit a linear model with
         T-distributed residuals to the dataset
+        y = X @ b + e
 
         Inputs:
         =============
@@ -339,7 +340,11 @@ class TDist:
             # current weighting
 
             b_hat, s = wls_regress(y, X, tau)
-            e = y - X @ b_hat
+            if X.ndim == 1: 
+                e = y - X[:, np.newaxis] @ b_hat
+            else:
+                e = y - X @ b_hat
+    
             mah_dist = (e * e) / s
 
             if fit_dof:

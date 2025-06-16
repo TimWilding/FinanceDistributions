@@ -45,7 +45,12 @@ def wls_regress(y, X, w):
     """
     n = X.shape[0]
     sw = np.sqrt(w)
-    wX = X * sw[:, np.newaxis]
+    if X.ndim == 1:
+        wX = X * sw
+        wX = wX[:, np.newaxis]
+    else:
+        wX = X * sw[:, np.newaxis]
+
     wy = y * sw
     b_hat = np.linalg.lstsq(wX, wy)[0]
     e = wy - wX @ b_hat
