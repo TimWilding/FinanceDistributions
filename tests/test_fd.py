@@ -49,10 +49,23 @@ def test_t_regress():
     beta_t = fd.TDist.regress(y, X, display_progress=True, dof=-1.0)
     e = y - X[:, np.newaxis] @ beta_t[0]
     e = e / beta_t[1] 
+     # Add intercept
     norm_mod = norm.fit(e)
     norm_fit = norm(norm_mod[0], norm_mod[1])
     tpdf = tdist(8.0)
     fd.plot_hist_fit(e, "Residuals", {"Normal": [norm_fit.pdf , "r-"], "TDIST": [tpdf.pdf, "g-"]}, 50, log_scale=True)
+    tpdf = tdist.fit(e, loc=0)
+
+    # Test tghe routine by comparing with scipy.stats.t distribution
+    # fit
+    tpdf_y = tdist.fit(y)
+    X = np.ones(len(y))
+    # Use regression against a column of ones to get the univariate T-Distribution
+    beta_ave = fd.TDist.regress(y, X, display_progress=True, dof=-1.0)
+    np.testing.assert_approx_equal(tpdf_y[0], beta_ave[2], 3) # test degrees of freedom
+    np.testing.assert_approx_equal(tpdf_y[1], beta_ave[0][0], 3) # test location
+    np.testing.assert_approx_equal(tpdf_y[2], beta_ave[1], 3) # test scale
+
     print('Finished testing T-Distribution regression')
 
 
