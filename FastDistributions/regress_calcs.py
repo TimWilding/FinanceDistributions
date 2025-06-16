@@ -1,3 +1,6 @@
+"""
+Simple regression calculations using statsmodels and numpy used in FastDistributions.
+"""
 from sklearn.preprocessing import StandardScaler
 import statsmodels.api as sm
 import pandas as pd
@@ -17,12 +20,12 @@ def sample_regress(
         del df_sample["Date"]
     except KeyError:
         print("No date column found")
-    lst_X_cols = list(df_sample.columns)
+    lst_x_cols = list(df_sample.columns)
     scaler = StandardScaler()
     df_scale = scaler.fit_transform(df_sample)
     df_scale = pd.DataFrame(df_scale, columns=df_sample.columns)
-    lst_X_cols.remove(regress_col)
-    X = df_scale[lst_X_cols]
+    lst_x_cols.remove(regress_col)
+    X = df_scale[lst_x_cols]
     y = df_scale[regress_col]
     if add_intercept:
         X = sm.add_constant(X)
@@ -32,7 +35,6 @@ def sample_regress(
     p = pd.DataFrame(pd.DataFrame({"coeff": model.params, "StdErr": model.bse}))
 
     return p.reset_index()
-
 
 
 def wls_regress(y, X, w):

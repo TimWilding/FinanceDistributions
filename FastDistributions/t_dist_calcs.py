@@ -340,21 +340,21 @@ class TDist:
             # current weighting
 
             b_hat, s = wls_regress(y, X, tau)
-            if X.ndim == 1: 
+            if X.ndim == 1:
                 e = y - X[:, np.newaxis] @ b_hat
             else:
                 e = y - X @ b_hat
-    
+
             mah_dist = (e * e) / (s * s)
 
             if fit_dof:
                 nu, _, _ = TDist.optimisedegreesoffreedom(
-                    nu, mah_dist, 1, 2*np.log(s), MIN_DOF, MAX_DOF
+                    nu, mah_dist, 1, 2 * np.log(s), MIN_DOF, MAX_DOF
                 )
 
             prev_ll = ll
 
-            ll = np.sum(TDist.llcalc(nu, mah_dist, 1, 2*np.log(s)))
+            ll = np.sum(TDist.llcalc(nu, mah_dist, 1, 2 * np.log(s)))
             log_likelihood.append(ll)
             ll_target = ll
             # Confirm the calculation using the scipy stats t-distribution

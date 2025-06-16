@@ -5,7 +5,7 @@ Testing module for the FinanceDistributions package
 import datetime
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
+from scipy.stats import norm, t as tdist
 from scipy.integrate import quad
 from scipy.stats import skew, kurtosis, kstest
 import matplotlib.pyplot as plt
@@ -40,33 +40,43 @@ def norm_fn(ret_data):
 
 
 def test_t_regress():
-    from scipy.stats import norm, t as tdist
+    """
+    Test the T-Distribution regression routine
+    This uses the AEX and SP 500 indices from the test data set
+    to test the regression routine
+    """
     df_returns_sample = fd.get_test_data(5)
     pivot_df = df_returns_sample.pivot(index="Date", columns="Name", values="LogReturn")
     pivot_df = pivot_df.dropna()
-    y = pivot_df['AEX Index'].values
-    X = pivot_df['SP 500'].values
+    y = pivot_df["AEX Index"].values
+    X = pivot_df["SP 500"].values
     beta_t = fd.TDist.regress(y, X, display_progress=True, dof=-1.0)
     e = y - X[:, np.newaxis] @ beta_t[0]
-    e = e / beta_t[1] 
-     # Add intercept
+    e = e / beta_t[1]
+    # Add intercept
     norm_mod = norm.fit(e)
     norm_fit = norm(norm_mod[0], norm_mod[1])
     tpdf = tdist(8.0)
-    fd.plot_hist_fit(e, "Residuals", {"Normal": [norm_fit.pdf , "r-"], "TDIST": [tpdf.pdf, "g-"]}, 50, log_scale=True)
+    fd.plot_hist_fit(
+        e,
+        "Residuals",
+        {"Normal": [norm_fit.pdf, "r-"], "TDIST": [tpdf.pdf, "g-"]},
+        50,
+        log_scale=True,
+    )
     tpdf = tdist.fit(e, loc=0)
 
-    # Test tghe routine by comparing with scipy.stats.t distribution
+    # Test the routine by comparing with scipy.stats.t distribution
     # fit
     tpdf_y = tdist.fit(y)
     X = np.ones(len(y))
     # Use regression against a column of ones to get the univariate T-Distribution
     beta_ave = fd.TDist.regress(y, X, display_progress=True, dof=-1.0)
-    np.testing.assert_approx_equal(tpdf_y[0], beta_ave[2], 3) # test degrees of freedom
-    np.testing.assert_approx_equal(tpdf_y[1], beta_ave[0][0], 3) # test location
-    np.testing.assert_approx_equal(tpdf_y[2], beta_ave[1], 3) # test scale
+    np.testing.assert_approx_equal(tpdf_y[0], beta_ave[2], 3)  # test degrees of freedom
+    np.testing.assert_approx_equal(tpdf_y[1], beta_ave[0][0], 3)  # test location
+    np.testing.assert_approx_equal(tpdf_y[2], beta_ave[1], 3)  # test scale
 
-    print('Finished testing T-Distribution regression')
+    print("Finished testing T-Distribution regression")
 
 
 def test_bootstrap():
@@ -219,7 +229,7 @@ def test_robust_correl():
     tmd_rand, _ = td.mahal_dist(x)
     comparison_matrix = tmd_rand[:, np.newaxis] <= tmd
 
-# Count the True values in each column (representing an element of tmd[0])
+    # Count the True values in each column (representing an element of tmd[0])
     counts = np.sum(comparison_matrix, axis=0) / tmd_rand.shape[0]
     np.testing.assert_allclose(counts, tcdf, atol=2e-3)
 
@@ -252,6 +262,7 @@ def test_yf_max():
     ]
     df_download = fd.download_yahoo_returns(lst_indices)
     df_download.to_csv("max_asset_returns.csv")
+
 
 def test_dists():
     """
@@ -333,7 +344,7 @@ def test_regress():
 
     y = pivot_df["SP 500"].values
     X = pivot_df.drop(columns=["SP 500"]).values
-    b_hat, s, nu, ll = fd.TDist.regress(y, X)
+    _, _, _, _ = fd.TDist.regress(y, X)
     print("Finished testing regression")
 
 
@@ -755,9 +766,7 @@ def test_information_criteria():
     print("Generalised Skew-T")
     print(fd.information_criteria(gsd_fit, sp_ret))
 
-
     report_model(gsd_fit, sp_ret)
-
 
     print("Finished")
 
@@ -766,35 +775,34 @@ def report_model(model, returns):
     """
     Report the model statistics and information criteria
     """
-    print('===============================================')
-    print('Model Fit Report:')
-    print('============================================')
+    print("===============================================")
+    print("Model Fit Report:")
+    print("============================================")
     ll, aic, bic, no_params, no_obs = fd.information_criteria(model, returns)
-    print(f'Parameters: {no_params}\t\t\tLog Likelihood: {ll:.2f}')
-    print(f'AIC: {aic:.4f}\t\t BIC: {bic:.4f}')
-    print(f'Number of Observations: {no_obs}')
-    (mu, var, skewness, kurt) = model.stats(moments='mvsk')
+    print(f"Parameters: {no_params}\t\t\tLog Likelihood: {ll:.2f}")
+    print(f"AIC: {aic:.4f}\t\t BIC: {bic:.4f}")
+    print(f"Number of Observations: {no_obs}")
+    (mu, var, skewness, kurt) = model.stats(moments="mvsk")
     dist_mu = np.mean(returns)
     dist_var = np.var(returns)
     dist_skew = skew(returns)
     dist_kurt = kurtosis(returns)
     ks_res = kstest(returns, model.cdf)
 
-    print('Model Statistics:\t\t\tDistribution Statistics:')
-    print('===============================================')
-    print(f'Mean:     {mu:.4f}\t\t\tMean:     {dist_mu:.4f}')
-    print(f'St. Dev:  {np.sqrt(var):.4f}\t\t\tSt.Dev:  {np.sqrt(dist_var):.4f}')
-    print(f'Skewness: {skewness:.3f}\t\t\tSkewness: {dist_skew:.3f}')
-    print(f'Kurtosis: {kurt:.3f}\t\t\tKurtosis: {dist_kurt:.3f}')
-    print('CDF Statistics')
-    print('===============================================')
+    print("Model Statistics:\t\t\tDistribution Statistics:")
+    print("===============================================")
+    print(f"Mean:     {mu:.4f}\t\t\tMean:     {dist_mu:.4f}")
+    print(f"St. Dev:  {np.sqrt(var):.4f}\t\t\tSt.Dev:  {np.sqrt(dist_var):.4f}")
+    print(f"Skewness: {skewness:.3f}\t\t\tSkewness: {dist_skew:.3f}")
+    print(f"Kurtosis: {kurt:.3f}\t\t\tKurtosis: {dist_kurt:.3f}")
+    print("CDF Statistics")
+    print("===============================================")
     a_squared, w_squared, k_s_stat, u_squared, kuiper_v = fd.edf_stats(returns, model)
-    print(f'KS Stat: {k_s_stat:.4f}\t\t\tProb: {ks_res.pvalue:.4f}')
-    print(f'Kuiper: {kuiper_v:.4f}\t\t\tWatson: {w_squared:.4f}')
-    print(f'U Stat: {u_squared:.4f}\t\t\tAnderson: {a_squared:.4f}')
+    print(f"KS Stat: {k_s_stat:.4f}\t\t\tProb: {ks_res.pvalue:.4f}")
+    print(f"Kuiper: {kuiper_v:.4f}\t\t\tWatson: {w_squared:.4f}")
+    print(f"U Stat: {u_squared:.4f}\t\t\tAnderson: {a_squared:.4f}")
 
-    print('Finished')
-
+    print("Finished")
 
 
 if __name__ == "__main__":
