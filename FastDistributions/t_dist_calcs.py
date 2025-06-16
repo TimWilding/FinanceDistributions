@@ -312,6 +312,7 @@ class TDist:
         b_hat: estimated regression coefficients
         s: estimated scale of the residuals
         nu: estimated degrees of freedom for the T-distribution
+        ll: history of log-likelihood of the fitted model
         """
         nobs = y.shape[0]
         start = time.time()
@@ -330,7 +331,7 @@ class TDist:
         delta_ll = 0.0
         _print_progress(
             display_progress,
-            "Iteration    Nu      DeltaTau        LL            LL_target",
+            "Iteration    Nu      DeltaTau        LL            LL_target      s",
         )
 
         for iter_num in range(1, max_iters + 1):
@@ -353,7 +354,7 @@ class TDist:
 
             prev_ll = ll
 
-            ll = np.sum(TDist.llcalc(nu, mah_dist, 1, np.log(s)))
+            ll = np.sum(TDist.llcalc(nu, mah_dist, 1, 2*np.log(s)))
             log_likelihood.append(ll)
             ll_target = ll
             # Confirm the calculation using the scipy stats t-distribution
@@ -383,7 +384,8 @@ class TDist:
             _print_progress(
                 display_progress,
                 f"{iter_num:04d}      {nu:7.2f} {delta_tau:7.2f}"
-                f"            {ll:7.2f}      {ll_target:7.2f}",
+                f"            {ll:7.2f}      {ll_target:7.2f}"
+                f"        {s:7.4f}",
             )
 
             if iter_num > 2:
