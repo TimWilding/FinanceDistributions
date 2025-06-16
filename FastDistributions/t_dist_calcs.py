@@ -324,7 +324,6 @@ class TDist:
 
         # Initialise with the OLS regression parameters
         tau = np.ones(nobs)
-        b_hat, s = wls_regress(y, X, tau)
         log_likelihood = []
         prev_ll = 0.0
         ll = 0.0
@@ -345,11 +344,11 @@ class TDist:
             else:
                 e = y - X @ b_hat
     
-            mah_dist = (e * e) / s
+            mah_dist = (e * e) / (s * s)
 
             if fit_dof:
                 nu, _, _ = TDist.optimisedegreesoffreedom(
-                    nu, mah_dist, 1, np.log(s), MIN_DOF, MAX_DOF
+                    nu, mah_dist, 1, 2*np.log(s), MIN_DOF, MAX_DOF
                 )
 
             prev_ll = ll

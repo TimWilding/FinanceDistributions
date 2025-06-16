@@ -39,6 +39,23 @@ def norm_fn(ret_data):
     return x
 
 
+def test_t_regress():
+    from scipy.stats import norm, t as tdist
+    df_returns_sample = fd.get_test_data(5)
+    pivot_df = df_returns_sample.pivot(index="Date", columns="Name", values="LogReturn")
+    pivot_df = pivot_df.dropna()
+    y = pivot_df['AEX Index'].values
+    X = pivot_df['SP 500'].values
+    beta_t = fd.TDist.regress(y, X, display_progress=True, dof=-1.0)
+    e = y - X[:, np.newaxis] @ beta_t[0]
+    e = e / beta_t[1] 
+    norm_mod = norm.fit(e)
+    norm_fit = norm(norm_mod[0], norm_mod[1])
+    tpdf = tdist(8.0)
+    fd.plot_hist_fit(e, "Residuals", {"Normal": [norm_fit.pdf , "r-"], "TDIST": [tpdf.pdf, "g-"]}, 50, log_scale=True)
+    print('Finished testing T-Distribution regression')
+
+
 def test_bootstrap():
     """
     Test the parallel bootstrap routine by fitting several normal distributions
@@ -764,6 +781,8 @@ def report_model(model, returns):
     print(f'U Stat: {u_squared:.4f}\t\t\tAnderson: {a_squared:.4f}')
 
     print('Finished')
+
+
 
 if __name__ == "__main__":
     test_dists()

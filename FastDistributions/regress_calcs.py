@@ -42,6 +42,15 @@ def wls_regress(y, X, w):
     y = X * b_hat + e
     b_hat = (X'W X)^{-1} X' W y
 
+    Parameters
+    y: dependent variable array-like, shape (n_samples,)
+    X: independent variables array-like, shape (n_samples, n_features)
+    w: weights array-like, shape (n_samples,) - weights for each sample
+
+    Returns
+    b_hat: array-like, shape (n_features,) - estimated coefficients
+    s: float - standard error of the regression
+
     """
     n = X.shape[0]
     sw = np.sqrt(w)
