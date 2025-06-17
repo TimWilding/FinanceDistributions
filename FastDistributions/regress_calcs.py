@@ -65,5 +65,5 @@ def wls_regress(y, X, w):
     wy = y * sw
     b_hat = np.linalg.lstsq(wX, wy)[0]
     e = wy - wX @ b_hat
-    s = np.sqrt(np.sum(e * e) / n)
+    s = np.sqrt(np.sum(e * e) / np.sum(w))
     return b_hat, s
