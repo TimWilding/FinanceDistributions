@@ -38,6 +38,58 @@ def norm_fn(ret_data):
     x = {"norm_loc": norm_fit[0], "norm_scale": norm_fit[1], "norm_ll": norm_ll}
     return x
 
+def test_mixt_regress():
+    """
+    Test the T-Distribution regression routine
+    This uses the AEX and SP 500 indices from the test data set
+    to test the regression routine
+    """
+    df_returns_sample = fd.get_test_data(5)
+    pivot_df = df_returns_sample.pivot(index="Date", columns="Name", values="LogReturn")
+    pivot_df = pivot_df.dropna()
+    y = pivot_df["AEX Index"].values
+    X = pivot_df["SP 500"].values
+    beta_single = fd.TDist.mixregress(y, X, ncomp=1, display_progress=True, dof=-1.0)
+
+    beta = fd.TDist.regress(y, X, display_progress=True, dof=8.0)
+
+    beta_t = fd.TDist.mixregress(y, X, ncomp=2, display_progress=True, dof=-1.0, max_iters=3000)
+    np.savetxt("c:\\users\\Tim\\post_probs.txt", beta_t[4])
+    plt.plot(beta_t[5])
+    plt.xlabel("Iteration ")
+    plt.ylabel("Log Likelihood")
+    plt.show()
+
+#    Test the routine by comparing with scipy.stats.t distribution
+    nobs = 5000
+    ncomp = 2
+    b = np.ones(ncomp)
+    X = np.random.normal(size=(nobs, ncomp))
+    mix_prob = 0.2
+    from scipy.stats import t as tdist
+
+    tdist_one = tdist(8.0, 0.0, 0.1)
+    tdist_two = tdist(8.0, 0.0, 0.4)
+    e = np.zeros((nobs, ncomp))
+    e[:, 0] = tdist_one.rvs(size=nobs)
+    e[:, 1] = tdist_two.rvs(size=nobs)
+    r = np.random.uniform(size=nobs)
+    comp = r> mix_prob
+    y = X @ b + e[:, 0] * (1 - comp) + e[:, 1] * comp
+    beta_mixture = fd.TDist.mixregress(y, X, ncomp=ncomp, display_progress=True, dof=-1.0, max_iters=9000)
+    print("Mixture Regression Coefficients:")
+    print(beta_mixture[0])
+    print("Mixture Regression Scale:")
+    print(beta_mixture[1])
+    print("Mixture Regression Degrees of Freedom:") 
+    print(beta_mixture[2])
+    print("Mixture Probability:")
+    print(beta_mixture[3])
+
+
+
+
+    print("Finished testing Mixture T-Distribution regression")
 
 def test_t_regress():
     """
