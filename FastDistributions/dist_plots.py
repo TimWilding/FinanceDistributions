@@ -282,7 +282,7 @@ def plot_function(
     n_pts = number of points to use to evaluate function
     """
     if x_lim is None:
-        x_lim=[-6, 6]
+        x_lim = [-6, 6]
     t_min = x_lim[0]
     t_max = x_lim[1]
     # build a grid of t values to use for calculating the function values

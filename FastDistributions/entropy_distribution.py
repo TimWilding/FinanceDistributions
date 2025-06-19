@@ -108,7 +108,7 @@ class EntropyDistribution(rv_continuous):
     @property
     def no_params(self):
         return self.ƛ.shape[0]
-    
+
     def _calc_stats(self):
         prob_vals = self._pdf(self.x)
         self._mu = np.sum(self.x * prob_vals * self.w)

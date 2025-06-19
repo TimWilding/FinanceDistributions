@@ -162,7 +162,7 @@ class GeneralisedSkewT(rv_continuous):
     @property
     def no_params(self):
         return 5
-    
+
     def _logpdf(self, x):
         return generalised_skewt_loglikelihood(
             x, self.μ, self.σ, self.ƛ, self.k, self.n

@@ -54,7 +54,6 @@ def wls_regress(y, X, w):
     s: float - standard error of the regression
 
     """
-    n = X.shape[0]
     sw = np.sqrt(w)
     if X.ndim == 1:
         wX = X * sw

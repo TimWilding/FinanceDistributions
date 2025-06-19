@@ -202,11 +202,11 @@ class Meixner(rv_continuous):
         self.mu = loc
         self._jsu_dist = None
         self._max_ratio = 1.0
-    
+
     @property
     def no_params(self):
         return 4
-    
+
     def _pdf(self, x):
         pd = np.exp(self._logpdf(x))
         if isinstance(pd, (float, np.float64)):
@@ -282,7 +282,8 @@ class Meixner(rv_continuous):
             u = random_state.uniform(size=size)
             return self._ppf(u)
         else:
-            return reject_block_sample(self, self._jsu_dist, size=size, random_state=random_state, max_ratio=self._max_ratio)
+            return reject_block_sample(self, self._jsu_dist, size=size,
+                                       random_state=random_state, max_ratio=self._max_ratio)
 
     #    def grad_pdf(self, x):
     #        return meixner_log_pdf_gradient(x, self.alpha, self.beta, self.delta, self.mu)#

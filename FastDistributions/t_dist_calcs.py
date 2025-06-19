@@ -3,7 +3,6 @@ Suite of routines used to fit a covariance matrix using a Multivariate
 T-Distribution using the EM Algorithm.
 """
 
-import math
 import time
 from functools import partial
 
@@ -11,7 +10,7 @@ import numpy as np
 import scipy.optimize as sopt
 from scipy.integrate import quad
 from scipy.linalg import eigh
-from scipy.special import gamma
+from scipy.special import gamma, gammaln
 from scipy.stats import chi2
 
 from .correl_calcs import mahal_dist
@@ -22,7 +21,7 @@ MIN_DOF = 0.2
 MAX_DOF = 1000
 MIN_TAU = 0.01
 MAX_TAU = 100
-
+LOG_PROB_FLOOR = np.log(1e-10)
 
 def _wt_stats(tau, returns_data):
     """
@@ -111,7 +110,7 @@ class TDist:
         def gampdf(t):
             return (
                 t ** (gam_shape - 1.0)
-                * math.exp(-t / gam_scale)
+                * np.exp(-t / gam_scale)
                 / (gamma(gam_shape) * gam_scale**gam_shape)
             )
 
@@ -157,13 +156,15 @@ class TDist:
         fit the degrees of freedom
         https://en.wikipedia.org/wiki/Multivariate_t-distribution"""
 
-        lg_df_2 = math.lgamma(degrees_of_freedom / 2)
-        gamma_v = np.vectorize(lambda x: math.lgamma(x) - lg_df_2)
+        lg_df_2 = gammaln(degrees_of_freedom / 2)
+        # see https://stackoverflow.com/questions/54850985/fast-algorithm-for-log-gamma-function
+        # for ideas to improve this
+        gamma_v = np.vectorize(lambda x: gammaln(x) - lg_df_2)
         nu_adj_var = 0.5 * (degrees_of_freedom + no_stock)
         ln_nu_dist = nu_adj_var * np.log(1 + mahl_dist / degrees_of_freedom)
         lg_gam = gamma_v(nu_adj_var)
         try:
-            lg_gam = lg_gam - 0.5 * no_stock * math.log(degrees_of_freedom)
+            lg_gam = lg_gam - 0.5 * no_stock * np.log(degrees_of_freedom)
         except ValueError:
             print("No Stock")
             print(no_stock)
@@ -174,7 +175,7 @@ class TDist:
             print("DoF")
             print(degrees_of_freedom)
         log_likelihood = (
-            lg_gam - 0.5 * no_stock * math.log(math.pi) - 0.5 * log_cov_det - ln_nu_dist
+            lg_gam - 0.5 * no_stock * np.log(np.pi) - 0.5 * log_cov_det - ln_nu_dist
         )
 
         return log_likelihood
@@ -395,10 +396,67 @@ class TDist:
         _print_progress(display_progress, f"Total time taken: {time.time()-start} s")
 
         return (b_hat, s, nu, log_likelihood)
-    
 
     @staticmethod
-    def mixregress(y, X, ncomp=2, max_iters=100, tol=1e-10, display_progress=True, dof=-1.0):
+    def calc_weighted_likelihood(mah_dist, s, nu, pi):
+        """
+        returns an array of weighted log-likelihoods for each component
+        and time period
+        mah_dist: nobs x ncomp array of Mahalanobis distances
+        s: ncomp array of scale parameters for each component
+        nu: ncomp array of degrees of freedom for each component
+        pi: ncomp array of mixing probabilities for each component
+        Returns
+        wt_ll: nobs x ncomp array of weighted log-likelihoods
+        """
+        ncomp = mah_dist.shape[1]
+        nobs = mah_dist.shape[0]
+        wt_ll = np.zeros((nobs, ncomp))
+        for i in range(ncomp):
+            wt_ll[:, i] = np.log(pi[i]) + TDist.llcalc(
+                nu[i], mah_dist[:, i], 1, 2 * np.log(s[i])
+            )
+        return wt_ll
+
+    @staticmethod
+    def _mix_likelihood(mah_dist, nu, s, pi):
+        """
+        Calculate the log-likelihood of the mixture model
+        """
+        weighted_ll = TDist.calc_weighted_likelihood(mah_dist, s, nu, pi)
+        max_ll = np.max(weighted_ll, axis=1, keepdims=True)
+        ll = max_ll + np.log(
+            np.sum(np.exp(weighted_ll - max_ll), axis=1, keepdims=True)
+        )
+        ll = np.sum(ll)
+        return ll, weighted_ll, max_ll
+
+    @staticmethod
+    def _optimise_mix_dof(nu, mahl_dist, s, pi):
+        """calculate the degrees of freedom parameter that maximimises the likelihood
+        for each component in the mixture model"""
+        ll_current = -np.sum(TDist._mix_likelihood(mahl_dist, nu, s, pi)[0])
+        ncomp = pi.shape[0]
+        for i in range(ncomp):
+
+            def fp(p, comp=i):
+                nu_l = nu.copy()
+                nu_l[comp] = p
+                return -np.sum(TDist._mix_likelihood(mahl_dist, nu_l, s, pi)[0])
+
+            res = sopt.fminbound(fp, MIN_DOF, MAX_DOF, full_output=True)
+
+            nu_ret = nu[i]
+            if res[1] < ll_current:
+                nu_ret = res[0]
+
+            nu[i] = nu_ret
+        return nu
+
+    @staticmethod
+    def mixregress(
+        y, X, ncomp=2, max_iters=100, tol=1e-10, display_progress=True, dof=-1.0
+    ):
         """
         Use the EM Algorithm to fit a linear model with
         a mixture of T-distributed residuals to the dataset
@@ -420,6 +478,7 @@ class TDist:
         b_hat: estimated regression coefficients
         s: estimated scale of the residuals
         nu: estimated degrees of freedom for the T-distribution
+        post_prob: posterior probabilities of each component for each observation
         ll: history of log-likelihood of the fitted model
         """
         nobs = y.shape[0]
@@ -428,25 +487,22 @@ class TDist:
         # weighting for individual t-distribution components
         tau = np.ones((nobs, ncomp))
         # weighting for each mixture component
-        pi = np.ones(ncomp) / ncomp # mixing probability
+        pi = np.ones(ncomp) / ncomp  # mixing probability
         # scale of the residuals for each component
         w = np.ones(nobs)
-
 
         nu = np.array([dof] * ncomp)
 
         b_hat, s_single = wls_regress(y, X, w)
-        s = np.linspace(0.5, 1.5, ncomp)*s_single
+        s = np.linspace(0.5, 1.5, ncomp) * s_single
 
         fit_dof = False
         if dof < 0:
             fit_dof = True
-            nu = np.array([8.0]*ncomp)
-            print("Fitting degrees of freedom for each component - CURRENTLY NOT IMPLEMENTED")
+            nu = np.array([8.0] * ncomp)
 
         # Initialise with the OLS regression parameters
-  
-        
+
         log_likelihood = []
         prev_ll = 0.0
         ll = 0.0
@@ -458,8 +514,6 @@ class TDist:
 
         for iter_num in range(1, max_iters + 1):
 
-
-
             if X.ndim == 1:
                 e = y - X[:, np.newaxis] @ b_hat
             else:
@@ -467,19 +521,13 @@ class TDist:
 
             # Calculate the Mahalanobis distance for each component returns
             # nperiods x ncomp array
-            mah_dist = (e*e)[:, np.newaxis] / np.tile(s*s, (e.shape[0], 1))
+            mah_dist = (e * e)[:, np.newaxis] / np.tile(s * s, (e.shape[0], 1))
 
-#            if fit_dof:
-                # TODO Fit the degrees of freedom for each component
-#                nu, _, _ = TDist.optimisedegreesoffreedom(
-#                    nu, mah_dist, 1, 2 * np.log(s), MIN_DOF, MAX_DOF
-#                )
+            if fit_dof:
+                nu = TDist._optimise_mix_dof(nu, mah_dist, s, pi)
 
             prev_ll = ll
-            weighted_ll = TDist.calc_weighted_likelihood(mah_dist, s, nu, pi)
-            max_ll = np.max(weighted_ll, axis=1, keepdims=True)
-            ll = max_ll + np.log(np.sum(np.exp(weighted_ll - max_ll), axis=1, keepdims=True))
-            ll = np.sum(ll)
+            ll, weighted_ll, max_ll = TDist._mix_likelihood(mah_dist, nu, s, pi)
 
             log_likelihood.append(ll)
             ll_target = ll
@@ -503,40 +551,43 @@ class TDist:
             # values
 
             tau_prev = tau
-            tau = (nu + mah_dist) / (nu + 1) # mah_dist is nobs x ncomp so tau is nobs x ncomp
+            tau = (nu + mah_dist) / (
+                nu + 1
+            )  # mah_dist is nobs x ncomp so tau is nobs x ncomp
             tau[tau < MIN_TAU] = MIN_TAU
             tau[tau > MAX_TAU] = MAX_TAU
 
             # Update the posterior probability of membership for each component
             rel_ll = weighted_ll - max_ll
-            LOG_PROB_FLOOR = np.log(1e-10)
-            rel_ll[rel_ll <LOG_PROB_FLOOR] = LOG_PROB_FLOOR
+
+            rel_ll[rel_ll < LOG_PROB_FLOOR] = LOG_PROB_FLOOR
             post_prob = np.exp(rel_ll)
             post_prob /= np.sum(post_prob, axis=1, keepdims=True)
-
 
             # Calculate updated variance scales
 
             var_scale = 1 / np.sum(post_prob * tau * (s * s), axis=1)
 
             # M-Step - calculate the regression coefficients given the weighting
-                        
+
             b_hat, _ = wls_regress(y, X, var_scale / np.mean(var_scale))
-            
+
             # Calculate the variance scale for each component
             w = post_prob / tau
-            s = np.sum(w * (e * e)[:, np.newaxis], axis=0, keepdims=True) 
+            s = np.sum(w * (e * e)[:, np.newaxis], axis=0, keepdims=True)
             s = np.squeeze(s / np.sum(w, axis=0, keepdims=True))
-            if ncomp==1:
+            if ncomp == 1:
                 s = np.array([s])
             s = np.sqrt(s)
 
             pi = np.sum(post_prob, axis=0) / nobs
 
             delta_tau = np.max(np.abs(tau - tau_prev))
-            warning = ' ' 
-            if (ll < prev_ll ) & (iter_num > 1):
-                warning = f' *** WARNING: LL DECREASED {np.log10(prev_ll - ll):5.2f} ***'
+            warning = " "
+            if (ll < prev_ll) & (iter_num > 1):
+                warning = (
+                    f" *** WARNING: LL DECREASED {np.log10(prev_ll - ll):5.2f} ***"
+                )
             _print_progress(
                 display_progress,
                 f"{iter_num:04d}      {nu[0]:7.2f} {delta_tau:7.2f}"
@@ -551,12 +602,3 @@ class TDist:
         _print_progress(display_progress, f"Total time taken: {time.time()-start} s")
 
         return (b_hat, s, nu, pi, post_prob, log_likelihood)
-
-    @staticmethod
-    def calc_weighted_likelihood(mah_dist, s, nu, pi):
-        nobs = mah_dist.shape[0]
-        ncomp = mah_dist.shape[1]
-        weighted_LL = np.zeros((nobs, ncomp))
-        for i in range(ncomp):
-             weighted_LL[:, i] = np.log(pi[i]) + TDist.llcalc(nu[i], mah_dist[:, i], 1, 2 * np.log(s[i]))
-        return weighted_LL
