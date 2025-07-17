@@ -271,8 +271,7 @@ class TDist:
             # the weighting scheme
             tau_prev = tau
             tau = (nu + nvar) / (nu + mahal_distances)
-            tau[tau < MIN_TAU] = MIN_TAU
-            tau[tau > MAX_TAU] = MAX_TAU
+            tau = np.clip(tau, MIN_TAU, MAX_TAU)
 
             delta_tau = np.max(np.abs(tau - tau_prev))
             _print_progress(
@@ -341,6 +340,7 @@ class TDist:
             # current weighting
 
             b_hat, s = wls_regress(y, X, tau)
+            s = np.squeeze(s)
             if X.ndim == 1:
                 e = y - X[:, np.newaxis] @ b_hat
             else:

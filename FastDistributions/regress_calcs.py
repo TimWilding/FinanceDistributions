@@ -62,7 +62,6 @@ def wls_regress(y, X, w):
         wX = X * sw[:, np.newaxis]
 
     wy = y * sw
-    b_hat = np.linalg.lstsq(wX, wy)[0]
-    e = wy - wX @ b_hat
-    s = np.sqrt(np.sum(e * e) / np.sum(w))
+    b_hat, sum_sq, _, _ = np.linalg.lstsq(wX, wy)
+    s = np.sqrt(sum_sq / np.sum(w))
     return b_hat, s
