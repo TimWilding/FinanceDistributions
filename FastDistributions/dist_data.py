@@ -12,8 +12,10 @@ import yfinance as yf
 from dateutil.relativedelta import relativedelta
 from pandas import read_csv
 import requests
+from tenacity import retry, wait_fixed, stop_after_attempt, retry_if_exception_type, wait_random_exponential
 
-
+@retry(wait=wait_fixed(1), stop=stop_after_attempt(3),
+       retry=retry_if_exception_type(requests.exceptions.RequestException))
 def _download_single_asset(asset, download_period, start, end):
     """
     download a single asset using the yfinance api and append

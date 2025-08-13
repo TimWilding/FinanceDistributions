@@ -101,6 +101,7 @@ soupsieve
 sqlite 
 statsmodels 
 tbb 
+tenacity
 tk 
 toml 
 tomli 

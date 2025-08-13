@@ -12,4 +12,5 @@ dependencies:
   - statsmodels
   - cvxpy
   - openpyxl
+  - tenacity
 prefix: C:\Users\Tim\AppData\Local\anaconda3\envs\fastdistributions
