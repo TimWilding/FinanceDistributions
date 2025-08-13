@@ -30,6 +30,7 @@ setup(
         "statsmodels",
         "cvxpy",
         "openpyxl",
+        "tenacity",
     ],
     package_dir={"": "FastDistributions"},
     package_data={
